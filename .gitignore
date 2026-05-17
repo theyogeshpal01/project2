@@ -1,0 +1,34 @@
+# Core dependency directories
+/vendor/
+node_modules/
+
+# Environment configuration (never commit secret credentials!)
+.env
+.env.local
+.env.*.local
+
+# Docker database data volume
+mysql_data/
+
+# Application user uploads (preserve the folder but ignore files)
+/uploads/*
+!/uploads/.gitkeep
+
+# Logs and databases
+*.log
+*.sqlite
+
+# OS generated files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# IDEs and text editors
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
