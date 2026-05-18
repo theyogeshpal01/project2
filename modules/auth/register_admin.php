@@ -21,9 +21,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $pass2  = $_POST['password2'] ?? '';
 
     // Simple setup key to prevent unauthorized access
-    if ($secret !== 'contractum@setup') {
-        $error = 'Invalid setup key.';
-    } elseif (empty($name) || empty($email) || empty($pass)) {
+    if (empty($name) || empty($email) || empty($pass)) {
         $error = 'All fields are required.';
     } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $error = 'Invalid email address.';
@@ -180,14 +178,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <?php endif; ?>
 
         <form method="POST">
-            <div class="form-group">
-                <label>Setup Key</label>
-                <input type="password" name="setup_key" placeholder="Enter setup key" required>
-                <div class="hint">Default key: <strong style="color:#94a3b8;">contractum@setup</strong></div>
-            </div>
-
-            <div style="height:1px; background:#334155; margin:1.25rem 0;"></div>
-
             <div class="form-group">
                 <label>Full Name</label>
                 <input type="text" name="name" placeholder="e.g. System Admin" value="<?php echo htmlspecialchars($_POST['name'] ?? ''); ?>" required>
