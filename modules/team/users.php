@@ -53,6 +53,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_user'])) {
     $uid = (int) $_POST['user_id'];
     if ($uid === (int) $current_user_id) {
         $error = "You cannot delete your own account.";
+    } elseif ($uid === 1) {
+        $error = "The system admin account cannot be deleted.";
     } else {
         try {
             $pdo->prepare("DELETE FROM users WHERE id = ?")->execute([$uid]);
@@ -212,13 +214,13 @@ $designations = $pdo->query("SELECT COUNT(DISTINCT role_id) FROM users")->fetchC
                                     data-user="<?php echo htmlspecialchars(json_encode(array_intersect_key($user, array_flip(['id','name','email','phone','role_id','team_id','manager_id','status']))), ENT_QUOTES); ?>"
                                     onclick="openEditModal(this)">Edit</button>
 
-                                <?php if ($user['id'] != $current_user_id): ?>
+                                <?php if ($user['id'] != $current_user_id && $user['id'] != 1): ?>
                                     <form method="POST" style="display:inline;" onsubmit="return confirm('Delete this user? This cannot be undone.')">
                                         <input type="hidden" name="user_id" value="<?php echo $user['id']; ?>">
                                         <button type="submit" name="delete_user" value="1" class="btn btn-danger" style="padding:4px 8px;font-size:0.75rem;">Delete</button>
                                     </form>
                                 <?php else: ?>
-                                    <button disabled class="btn glass-card" style="padding:4px 8px;font-size:0.75rem;opacity:0.5;">Delete</button>
+                                    <button disabled title="This account cannot be deleted" class="btn glass-card" style="padding:4px 8px;font-size:0.75rem;opacity:0.5;cursor:not-allowed;">Delete</button>
                                 <?php endif; ?>
                             </div>
                         </td>

@@ -61,6 +61,18 @@ document.querySelectorAll('[data-tab-target]').forEach(btn => {
         if (target) target.classList.add('active');
     });
 });
+
+// ── Live Clock ────────────────────────────────────────────────
+function updateLiveClock() {
+    const clock = document.getElementById('liveClock');
+    if (clock) {
+        const now = new Date();
+        clock.textContent = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'});
+    }
+}
+setInterval(updateLiveClock, 1000);
+updateLiveClock();
+
 </script>
 </body>
 </html>

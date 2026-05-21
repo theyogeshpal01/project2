@@ -20,6 +20,7 @@ $menus = [];
 if ($role_id == 1) {
     $menus = [
         ['href' => 'index.php', 'label' => 'Dashboard', 'icon' => 'home', 'match' => 'index.php'],
+        ['href' => 'modules/team/teams.php', 'label' => 'Teams', 'icon' => 'team', 'match' => 'team/teams'],
         ['href' => 'modules/team/users.php', 'label' => 'Employees', 'icon' => 'users', 'match' => 'team/users'],
         ['href' => 'modules/payroll/attendance.php', 'label' => 'Attendance', 'icon' => 'attendance', 'match' => 'modules/payroll/attendance'],
         ['href' => 'modules/leaves/index.php', 'label' => 'Manage Leaves', 'icon' => 'calendar', 'match' => 'modules/leaves'],

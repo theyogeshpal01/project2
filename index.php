@@ -38,8 +38,18 @@ $rejected_leaves = safeCount($pdo, "SELECT COUNT(*) FROM leaves WHERE status='re
 
 // ── Monthly Attendance ──
 $month_days      = (int)date('d');
-$month_present   = safeCount($pdo, "SELECT COUNT(DISTINCT user_id) FROM attendance WHERE MONTH(date)=MONTH(CURDATE()) AND YEAR(date)=YEAR(CURDATE()) AND status='present'");
+$month_present   = safeCount($pdo, "SELECT COUNT(DISTINCT user_id) FROM attendance WHERE MONTH(attendance_date)=MONTH(CURDATE()) AND YEAR(attendance_date)=YEAR(CURDATE()) AND status='full'");
 $monthly_pct     = $team_size > 0 ? round(($month_present / max($team_size,1)) * 100, 1) : 0;
+
+// ── Work Hours & Overtime ──
+$avg_hours_data = safeQuery($pdo, "
+    SELECT AVG(TIMESTAMPDIFF(HOUR, check_in, check_out)) as avg_hr, 
+           SUM(GREATEST(0, TIMESTAMPDIFF(HOUR, check_in, check_out) - 9)) as ot_hr
+    FROM attendance 
+    WHERE MONTH(attendance_date) = MONTH(CURDATE()) AND YEAR(attendance_date) = YEAR(CURDATE()) AND check_out IS NOT NULL
+");
+$avg_work_hours = round($avg_hours_data[0]['avg_hr'] ?? 0, 1) . 'h';
+$overtime_hours = round($avg_hours_data[0]['ot_hr'] ?? 0, 1) . 'h';
 
 // ── Department Distribution ──
 $dept_dist = safeQuery($pdo, "SELECT t.team_name, COUNT(u.id) as emp_count FROM users u LEFT JOIN teams t ON u.team_id = t.id WHERE u.status='active' GROUP BY t.id, t.team_name ORDER BY emp_count DESC LIMIT 8");
@@ -509,7 +519,7 @@ if ($pending_qc > 10) {
 
     <div class="small-stat-card">
         <div class="ssc-left">
-            <div class="ssc-val">0h</div>
+            <div class="ssc-val"><?php echo $avg_work_hours; ?></div>
             <div class="ssc-label" style="color:var(--accent); font-weight:600;">Avg Work Hours</div>
         </div>
         <div class="ssc-icon" style="background:rgba(8,145,178,0.08); color:var(--accent);">
@@ -519,7 +529,7 @@ if ($pending_qc > 10) {
 
     <div class="small-stat-card">
         <div class="ssc-left">
-            <div class="ssc-val">0h</div>
+            <div class="ssc-val"><?php echo $overtime_hours; ?></div>
             <div class="ssc-label" style="color:var(--warning); font-weight:600;">Overtime Hours</div>
         </div>
         <div class="ssc-icon" style="background:rgba(245,158,11,0.08); color:var(--warning);">

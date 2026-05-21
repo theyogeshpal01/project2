@@ -39,7 +39,7 @@ $total_payroll  = $pdo->query("SELECT SUM(net_payable) FROM payroll WHERE month=
         </div>
     </div>
     <div class="page-header-actions">
-        <a href="<?php echo BASE_URL; ?>modules/hr/employees.php" class="btn">Export</a>
+        <a href="<?php echo BASE_URL; ?>modules/hr/export.php" class="btn">Export</a>
         <a href="<?php echo BASE_URL; ?>modules/team/users.php" class="btn btn-primary">+ Add Employee</a>
     </div>
 </div>

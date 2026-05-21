@@ -32,6 +32,8 @@ CREATE TABLE IF NOT EXISTS users (
     department_id INT,
     status ENUM('active', 'inactive', 'suspended') DEFAULT 'active',
     kyc_status ENUM('pending', 'verified', 'rejected') DEFAULT 'pending',
+    phone VARCHAR(20) NULL,
+    base_salary DECIMAL(15, 2) DEFAULT 0.00,
     wallet_balance DECIMAL(15, 2) DEFAULT 0.00,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (role_id) REFERENCES roles(id),
