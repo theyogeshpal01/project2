@@ -109,6 +109,7 @@ $teams = $pdo->query("
                     <td><span class="badge badge-primary"><?php echo $team['emp_count']; ?></span></td>
                     <td>
                         <div style="display:flex; gap:6px; align-items:center;">
+                            <a href="members.php?team_id=<?php echo $team['id']; ?>" class="btn glass-card" style="padding:4px 8px;font-size:0.75rem;color:var(--primary);font-weight:600;">Members</a>
                             <button class="btn btn-primary" style="padding:4px 8px;font-size:0.75rem;" 
                                 data-team="<?php echo htmlspecialchars(json_encode($team), ENT_QUOTES); ?>" 
                                 onclick="openEditTeamModal(this)">Edit</button>

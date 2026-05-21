@@ -115,6 +115,7 @@ $distributors   = $pdo->query("SELECT COUNT(*) FROM users WHERE role_id = 5")->f
                     <td style="font-size:0.8rem; color:var(--text-muted);"><?php echo date('d M Y', strtotime($team['created_at'])); ?></td>
                     <td>
                         <div style="display:flex; gap:8px;">
+                            <a href="members.php?team_id=<?php echo $team['id']; ?>" class="btn glass-card" style="padding:5px 10px; font-size:0.75rem; color:var(--primary); font-weight:600;">Members</a>
                             <button onclick="editTeam(<?php echo htmlspecialchars(json_encode($team)); ?>)" class="btn glass-card" style="padding:5px 10px; font-size:0.75rem;">Edit</button>
                             <a href="?delete=<?php echo $team['id']; ?>" onclick="return confirm('Delete this team?')" class="btn" style="padding:5px 10px; font-size:0.75rem; background:var(--danger); color:white;">Delete</a>
                         </div>
