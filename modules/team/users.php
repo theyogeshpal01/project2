@@ -6,11 +6,11 @@ $current_user_id = $_SESSION['user_id'];
 
 // Handle user creation
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_user'])) {
-    $name       = trim($_POST['name']);
-    $email      = trim($_POST['email']);
-    $password   = password_hash($_POST['password'], PASSWORD_DEFAULT);
-    $role_id    = (int)$_POST['role_id'];
-    $team_id    = $_POST['team_id'] ?: null;
+    $name = trim($_POST['name']);
+    $email = trim($_POST['email']);
+    $password = password_hash($_POST['password'], PASSWORD_DEFAULT);
+    $role_id = (int) $_POST['role_id'];
+    $team_id = $_POST['team_id'] ?: null;
     $manager_id = $_POST['manager_id'] ?: null;
 
     try {
@@ -24,13 +24,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_user'])) {
 
 // Handle edit user
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_user'])) {
-    $uid        = (int)$_POST['user_id'];
-    $name       = trim($_POST['name']);
-    $email      = trim($_POST['email']);
-    $role_id    = (int)$_POST['role_id'];
-    $team_id    = $_POST['team_id'] ?: null;
+    $uid = (int) $_POST['user_id'];
+    $name = trim($_POST['name']);
+    $email = trim($_POST['email']);
+    $role_id = (int) $_POST['role_id'];
+    $team_id = $_POST['team_id'] ?: null;
     $manager_id = $_POST['manager_id'] ?: null;
-    $status     = $_POST['status'];
+    $status = $_POST['status'];
 
     try {
         if (!empty($_POST['password'])) {
@@ -48,8 +48,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_user'])) {
 
 // Handle delete
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_user'])) {
-    $uid = (int)$_POST['user_id'];
-    if ($uid === (int)$current_user_id) {
+    $uid = (int) $_POST['user_id'];
+    if ($uid === (int) $current_user_id) {
         $error = "You cannot delete your own account.";
     } else {
         try {
@@ -63,121 +63,163 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_user'])) {
     }
 }
 
-$users    = $pdo->query("SELECT u.*, r.role_name, t.team_name, m.name as manager_name
+$users = $pdo->query("SELECT u.*, r.role_name, t.team_name, m.name as manager_name, d.dept_name
     FROM users u
     LEFT JOIN roles r ON u.role_id = r.id
     LEFT JOIN teams t ON u.team_id = t.id
     LEFT JOIN users m ON u.manager_id = m.id
+    LEFT JOIN departments d ON u.department_id = d.id
     ORDER BY u.created_at DESC")->fetchAll();
 
-$roles    = getRoles($pdo);
-$teams    = getTeams($pdo);
+$roles = getRoles($pdo);
+$teams = getTeams($pdo);
 $managers = $pdo->query("SELECT id, name FROM users WHERE role_id IN (1,2,3) ORDER BY name")->fetchAll();
 
 // Stats
-$total   = count($users);
-$active  = count(array_filter($users, fn($u) => $u['status'] === 'active'));
-$inactive= $total - $active;
+$total = count($users);
+$active = count(array_filter($users, fn($u) => $u['status'] === 'active'));
+$inactive = $total - $active;
+$designations = $pdo->query("SELECT COUNT(DISTINCT role_id) FROM users")->fetchColumn();
 ?>
 
-<div class="page-header">
+<div class="page-header" style="align-items:flex-start;">
     <div>
-        <h1>User Management</h1>
-        <p>Add, edit, delete and manage all system users.</p>
+        <h1 style="font-size:1.5rem;font-weight:700;color:var(--text-dark);">Employees Management</h1>
+        <p style="color:var(--text-muted);font-size:0.875rem;">Manage employees added by you</p>
+        <div style="display:flex;gap:10px;margin-top:1rem;">
+            <button class="btn btn-primary" style="background:#f8fafc;color:var(--primary);border:1px solid #e2e8f0;">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg> Employees
+            </button>
+            <button class="btn" style="background:transparent;color:var(--text-muted);border:none;">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg> Form Links
+            </button>
+        </div>
     </div>
-    <button class="btn btn-primary" onclick="openAddModal()">
-        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><line x1="19" y1="8" x2="19" y2="14"></line><line x1="22" y1="11" x2="16" y2="11"></line></svg>
-        Add New User
-    </button>
+    <div style="display:flex;gap:10px;">
+        <button class="btn glass-card">Clear Filters</button>
+        <button class="btn btn-primary" onclick="openAddModal()">+ Add Employee</button>
+    </div>
 </div>
 
-<?php if (isset($success)): ?><div class="alert alert-success"><?php echo $success; ?></div><?php endif; ?>
-<?php if (isset($error)):   ?><div class="alert alert-danger"><?php echo $error; ?></div><?php endif; ?>
+<?php if (isset($success)): ?>
+    <div class="alert alert-success"><?php echo $success; ?></div><?php endif; ?>
+<?php if (isset($error)): ?>
+    <div class="alert alert-danger"><?php echo $error; ?></div><?php endif; ?>
 
 <!-- Stats -->
-<div class="stats-grid" style="grid-template-columns:repeat(3,1fr); margin-bottom:2rem;">
-    <div class="stat-card glass-card"><div class="stat-label">Total Users</div><div class="stat-value"><?php echo $total; ?></div></div>
-    <div class="stat-card glass-card"><div class="stat-label">Active</div><div class="stat-value" style="color:var(--success);"><?php echo $active; ?></div></div>
-    <div class="stat-card glass-card"><div class="stat-label">Inactive</div><div class="stat-value" style="color:var(--danger);"><?php echo $inactive; ?></div></div>
+<div class="stats-grid" style="grid-template-columns:repeat(4,1fr); margin-bottom:1.5rem;">
+    <div class="stat-card glass-card" style="text-align:center;padding:1.5rem;">
+        <div style="font-size:2rem;font-weight:700;color:var(--primary);"><?php echo $total; ?></div>
+        <div style="font-size:0.875rem;color:var(--text-muted);margin-top:5px;">Total Employees</div>
+    </div>
+    <div class="stat-card glass-card" style="text-align:center;padding:1.5rem;">
+        <div style="font-size:2rem;font-weight:700;color:var(--success);"><?php echo $active; ?></div>
+        <div style="font-size:0.875rem;color:var(--text-muted);margin-top:5px;">Active Employees</div>
+    </div>
+    <div class="stat-card glass-card" style="text-align:center;padding:1.5rem;">
+        <div style="font-size:2rem;font-weight:700;color:var(--danger);"><?php echo $inactive; ?></div>
+        <div style="font-size:0.875rem;color:var(--text-muted);margin-top:5px;">Inactive Employees</div>
+    </div>
+    <div class="stat-card glass-card" style="text-align:center;padding:1.5rem;">
+        <div style="font-size:2rem;font-weight:700;color:#0ea5e9;"><?php echo $designations; ?></div>
+        <div style="font-size:0.875rem;color:var(--text-muted);margin-top:5px;">Designations</div>
+    </div>
 </div>
 
 <div class="glass-card" style="padding:1.5rem;">
-    <!-- Search -->
-    <div style="margin-bottom:1.25rem;">
-        <input type="text" id="user-search" onkeyup="filterUsers()" placeholder="Search by name, email or role..." class="form-control" style="max-width:360px;">
+    <!-- Filters -->
+    <div style="margin-bottom:1.5rem;">
+        <h3 style="font-size:1rem;margin-bottom:1rem;font-weight:600;">Filters</h3>
+        <div class="filter-bar" style="padding:0; margin-bottom:0;">
+            <div>
+                <label style="font-size:0.75rem;color:var(--text-muted);display:block;margin-bottom:5px;">Search</label>
+                <input type="text" id="user-search" onkeyup="filterUsers()" placeholder="Search by name, email, designation..." class="form-control">
+            </div>
+            <div>
+                <label style="font-size:0.75rem;color:var(--text-muted);display:block;margin-bottom:5px;">Role</label>
+                <select class="form-control"><option>All Roles</option></select>
+            </div>
+            <div>
+                <label style="font-size:0.75rem;color:var(--text-muted);display:block;margin-bottom:5px;">Designation</label>
+                <input type="text" placeholder="Filter by designation..." class="form-control">
+            </div>
+            <div>
+                <label style="font-size:0.75rem;color:var(--text-muted);display:block;margin-bottom:5px;">Status</label>
+                <select class="form-control"><option>All Status</option></select>
+            </div>
+        </div>
+    </div>
+
+    <div style="border-top:1px solid var(--border);margin-bottom:1rem;padding-top:1rem;display:flex;justify-content:space-between;align-items:center;">
+        <h3 style="font-size:1rem;font-weight:600;">Employees List</h3>
+        <span style="font-size:0.875rem;color:var(--text-muted);">Showing <?php echo $total; ?> employees</span>
     </div>
 
     <div class="data-table-container">
         <table id="users-table">
             <thead>
                 <tr>
-                    <th>User</th>
+                    <th>Employee ID</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Mobile</th>
                     <th>Role</th>
-                    <th>Team</th>
-                    <th>Reports To</th>
+                    <th>Manager</th>
+                    <th>Designation</th>
+                    <th>Department</th>
+                    <th>Salary</th>
+                    <th>Joined On</th>
                     <th>Status</th>
-                    <th>Joined</th>
                     <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
                 <?php if (empty($users)): ?>
-                    <tr><td colspan="7" style="text-align:center; padding:3rem; color:var(--text-muted);">No users found.</td></tr>
+                    <tr><td colspan="12" style="text-align:center; padding:3rem; color:var(--text-muted);">No employees found.</td></tr>
                 <?php endif; ?>
-                <?php foreach ($users as $user): ?>
-                <tr>
-                    <td>
-                        <div style="display:flex; align-items:center; gap:10px;">
-                            <img src="https://ui-avatars.com/api/?name=<?php echo urlencode($user['name']); ?>&background=4f46e5&color=fff&size=64" style="width:34px; height:34px; border-radius:50%;">
-                            <div>
-                                <div style="font-weight:600;"><?php echo htmlspecialchars($user['name']); ?></div>
-                                <div style="font-size:0.75rem; color:var(--text-muted);"><?php echo htmlspecialchars($user['email']); ?></div>
+                <?php foreach ($users as $user): 
+                    $emp_id = 'EMP' . str_pad($user['id'], 4, '0', STR_PAD_LEFT);
+                ?>
+                    <tr>
+                        <td style="font-weight:500;"><?php echo $emp_id; ?></td>
+                        <td>
+                            <div style="font-weight:600;"><?php echo htmlspecialchars($user['name']); ?></div>
+                        </td>
+                        <td style="font-size:0.875rem;"><?php echo htmlspecialchars($user['email']); ?></td>
+                        <td style="font-size:0.875rem;"><?php echo htmlspecialchars($user['phone'] ?? '—'); ?></td>
+                        <td>
+                            <span class="badge" style="background:rgba(168,85,247,0.1);color:#9333ea;">
+                                <?php echo htmlspecialchars($user['role_name'] ?? '—'); ?>
+                            </span>
+                        </td>
+                        <td style="font-size:0.875rem;"><?php echo htmlspecialchars($user['manager_name'] ?? 'N/A'); ?></td>
+                        <td style="font-size:0.875rem;"><?php echo htmlspecialchars($user['role_name'] ?? '—'); ?></td>
+                        <td style="font-size:0.875rem;"><?php echo htmlspecialchars($user['dept_name'] ?? 'Administration'); ?></td>
+                        <td style="font-size:0.875rem;">₹<?php echo number_format($user['base_salary'] ?? 0); ?></td>
+                        <td style="font-size:0.875rem;"><?php echo date('d/m/Y', strtotime($user['created_at'])); ?></td>
+                        <td>
+                            <?php
+                            $sc = ['active' => 'success', 'inactive' => 'danger', 'suspended' => 'warning'];
+                            echo '<span class="badge badge-' . ($sc[$user['status']] ?? 'muted') . '">' . ucfirst($user['status']) . '</span>';
+                            ?>
+                        </td>
+                        <td>
+                            <div style="display:flex; gap:6px; align-items:center;">
+                                <button onclick='openEditModal(<?php echo htmlspecialchars(json_encode($user), ENT_QUOTES); ?>)' class="btn btn-primary" style="padding:4px 8px;font-size:0.75rem;">Edit</button>
+                                <button class="btn btn-danger" style="padding:4px 8px;font-size:0.75rem;"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg></button>
+                                <button class="btn btn-success" style="padding:4px 8px;font-size:0.75rem;">Profile</button>
+                                
+                                <?php if ($user['id'] != $current_user_id): ?>
+                                    <form method="POST" style="display:inline;" onsubmit="return confirm('Delete user? This cannot be undone.')">
+                                        <input type="hidden" name="user_id" value="<?php echo $user['id']; ?>">
+                                        <button type="submit" name="delete_user" value="1" class="btn btn-danger" style="padding:4px 8px;font-size:0.75rem;">Delete</button>
+                                    </form>
+                                <?php else: ?>
+                                    <button disabled class="btn glass-card" style="padding:4px 8px;font-size:0.75rem;opacity:0.5;">Delete</button>
+                                <?php endif; ?>
                             </div>
-                        </div>
-                    </td>
-                    <td><span class="badge badge-primary"><?php echo htmlspecialchars($user['role_name'] ?? '—'); ?></span></td>
-                    <td style="font-size:0.875rem;"><?php echo htmlspecialchars($user['team_name'] ?? '—'); ?></td>
-                    <td style="font-size:0.875rem;"><?php echo htmlspecialchars($user['manager_name'] ?? '—'); ?></td>
-                    <td>
-                        <?php
-                        $sc = ['active'=>'success','inactive'=>'danger','suspended'=>'warning'];
-                        echo '<span class="badge badge-'.($sc[$user['status']]??'muted').'">'.strtoupper($user['status']).'</span>';
-                        ?>
-                    </td>
-                    <td style="font-size:0.8rem; color:var(--text-muted);"><?php echo date('d M Y', strtotime($user['created_at'])); ?></td>
-                    <td>
-                        <div style="display:flex; gap:6px; align-items:center;">
-                            <!-- Edit -->
-                            <button onclick='openEditModal(<?php echo htmlspecialchars(json_encode($user), ENT_QUOTES); ?>)'
-                                title="Edit User"
-                                style="background:none; border:1px solid var(--border); border-radius:7px; padding:5px 8px; cursor:pointer; color:var(--primary); transition:all 0.2s;"
-                                onmouseover="this.style.background='rgba(79,70,229,0.1)'"
-                                onmouseout="this.style.background='none'">
-                                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-                            </button>
-
-                            <?php if ($user['id'] != $current_user_id): ?>
-                            <!-- Delete -->
-                            <form method="POST" style="display:inline;" onsubmit="return confirm('Delete user \'<?php echo htmlspecialchars(addslashes($user['name'])); ?>\'? This cannot be undone.')">
-                                <input type="hidden" name="user_id" value="<?php echo $user['id']; ?>">
-                                <button type="submit" name="delete_user" value="1"
-                                    title="Delete User"
-                                    style="background:none; border:1px solid var(--border); border-radius:7px; padding:5px 8px; cursor:pointer; color:var(--danger); transition:all 0.2s;"
-                                    onmouseover="this.style.background='rgba(239,68,68,0.1)'"
-                                    onmouseout="this.style.background='none'">
-                                    <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>
-                                </button>
-                            </form>
-                            <?php else: ?>
-                            <!-- Can't delete self -->
-                            <button disabled title="Cannot delete your own account"
-                                style="background:none; border:1px solid var(--border); border-radius:7px; padding:5px 8px; cursor:not-allowed; color:var(--text-muted); opacity:0.4;">
-                                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path></svg>
-                            </button>
-                            <?php endif; ?>
-                        </div>
-                    </td>
-                </tr>
+                        </td>
+                    </tr>
                 <?php endforeach; ?>
             </tbody>
         </table>
@@ -190,15 +232,20 @@ $inactive= $total - $active;
         <div class="modal-header">
             <h3>Add New User</h3>
             <button class="modal-close" onclick="document.getElementById('add-user-modal').classList.remove('open')">
-                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"></path></svg>
+                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
             </button>
         </div>
         <form method="POST">
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
-                <div class="form-group"><label class="form-label">Full Name *</label><input type="text" name="name" class="form-control" required></div>
-                <div class="form-group"><label class="form-label">Email *</label><input type="email" name="email" class="form-control" required></div>
+                <div class="form-group"><label class="form-label">Full Name *</label><input type="text" name="name"
+                        class="form-control" required></div>
+                <div class="form-group"><label class="form-label">Email *</label><input type="email" name="email"
+                        class="form-control" required></div>
             </div>
-            <div class="form-group"><label class="form-label">Password *</label><input type="password" name="password" class="form-control" required placeholder="Min. 6 characters"></div>
+            <div class="form-group"><label class="form-label">Password *</label><input type="password" name="password"
+                    class="form-control" required placeholder="Min. 6 characters"></div>
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
                 <div class="form-group">
                     <label class="form-label">Role *</label>
@@ -213,7 +260,8 @@ $inactive= $total - $active;
                     <select name="team_id" class="form-control">
                         <option value="">No Team</option>
                         <?php foreach ($teams as $t): ?>
-                            <option value="<?php echo $t['id']; ?>"><?php echo htmlspecialchars($t['team_name']); ?></option>
+                            <option value="<?php echo $t['id']; ?>"><?php echo htmlspecialchars($t['team_name']); ?>
+                            </option>
                         <?php endforeach; ?>
                     </select>
                 </div>
@@ -228,7 +276,8 @@ $inactive= $total - $active;
                 </select>
             </div>
             <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:1rem;">
-                <button type="button" class="btn glass-card" onclick="document.getElementById('add-user-modal').classList.remove('open')">Cancel</button>
+                <button type="button" class="btn glass-card"
+                    onclick="document.getElementById('add-user-modal').classList.remove('open')">Cancel</button>
                 <button type="submit" name="add_user" class="btn btn-primary">Create User</button>
             </div>
         </form>
@@ -241,16 +290,23 @@ $inactive= $total - $active;
         <div class="modal-header">
             <h3>Edit User</h3>
             <button class="modal-close" onclick="document.getElementById('edit-user-modal').classList.remove('open')">
-                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"></path></svg>
+                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
             </button>
         </div>
         <form method="POST">
             <input type="hidden" name="user_id" id="edit-user-id">
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
-                <div class="form-group"><label class="form-label">Full Name *</label><input type="text" name="name" id="edit-name" class="form-control" required></div>
-                <div class="form-group"><label class="form-label">Email *</label><input type="email" name="email" id="edit-email" class="form-control" required></div>
+                <div class="form-group"><label class="form-label">Full Name *</label><input type="text" name="name"
+                        id="edit-name" class="form-control" required></div>
+                <div class="form-group"><label class="form-label">Email *</label><input type="email" name="email"
+                        id="edit-email" class="form-control" required></div>
             </div>
-            <div class="form-group"><label class="form-label">New Password <span style="color:var(--text-muted); font-weight:400;">(leave blank to keep current)</span></label><input type="password" name="password" class="form-control" placeholder="Leave blank to keep current"></div>
+            <div class="form-group"><label class="form-label">New Password <span
+                        style="color:var(--text-muted); font-weight:400;">(leave blank to keep
+                        current)</span></label><input type="password" name="password" class="form-control"
+                    placeholder="Leave blank to keep current"></div>
             <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:1rem;">
                 <div class="form-group">
                     <label class="form-label">Role *</label>
@@ -273,7 +329,8 @@ $inactive= $total - $active;
                     <select name="team_id" id="edit-team" class="form-control">
                         <option value="">No Team</option>
                         <?php foreach ($teams as $t): ?>
-                            <option value="<?php echo $t['id']; ?>"><?php echo htmlspecialchars($t['team_name']); ?></option>
+                            <option value="<?php echo $t['id']; ?>"><?php echo htmlspecialchars($t['team_name']); ?>
+                            </option>
                         <?php endforeach; ?>
                     </select>
                 </div>
@@ -288,7 +345,8 @@ $inactive= $total - $active;
                 </select>
             </div>
             <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:1rem;">
-                <button type="button" class="btn glass-card" onclick="document.getElementById('edit-user-modal').classList.remove('open')">Cancel</button>
+                <button type="button" class="btn glass-card"
+                    onclick="document.getElementById('edit-user-modal').classList.remove('open')">Cancel</button>
                 <button type="submit" name="edit_user" class="btn btn-primary">Save Changes</button>
             </div>
         </form>
@@ -296,27 +354,27 @@ $inactive= $total - $active;
 </div>
 
 <script>
-function openAddModal() {
-    document.getElementById('add-user-modal').classList.add('open');
-}
+    function openAddModal() {
+        document.getElementById('add-user-modal').classList.add('open');
+    }
 
-function openEditModal(user) {
-    document.getElementById('edit-user-id').value  = user.id;
-    document.getElementById('edit-name').value     = user.name;
-    document.getElementById('edit-email').value    = user.email;
-    document.getElementById('edit-role').value     = user.role_id;
-    document.getElementById('edit-status').value   = user.status;
-    document.getElementById('edit-team').value     = user.team_id || '';
-    document.getElementById('edit-manager').value  = user.manager_id || '';
-    document.getElementById('edit-user-modal').classList.add('open');
-}
+    function openEditModal(user) {
+        document.getElementById('edit-user-id').value = user.id;
+        document.getElementById('edit-name').value = user.name;
+        document.getElementById('edit-email').value = user.email;
+        document.getElementById('edit-role').value = user.role_id;
+        document.getElementById('edit-status').value = user.status;
+        document.getElementById('edit-team').value = user.team_id || '';
+        document.getElementById('edit-manager').value = user.manager_id || '';
+        document.getElementById('edit-user-modal').classList.add('open');
+    }
 
-function filterUsers() {
-    const q = document.getElementById('user-search').value.toLowerCase();
-    document.querySelectorAll('#users-table tbody tr').forEach(row => {
-        row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
-    });
-}
+    function filterUsers() {
+        const q = document.getElementById('user-search').value.toLowerCase();
+        document.querySelectorAll('#users-table tbody tr').forEach(row => {
+            row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+        });
+    }
 </script>
 
 <?php include_once '../../includes/footer.php'; ?>

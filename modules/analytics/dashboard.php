@@ -72,32 +72,60 @@ $recent = $pdo->query("
 ?>
 
 <div class="page-header">
-    <div>
-        <h1>Analytics Dashboard</h1>
-        <p>Real-time overview of your operations, leads, and performance.</p>
+    <div class="page-header-left">
+        <div class="page-header-icon" style="background:rgba(37,99,235,0.1);color:var(--primary);">
+            <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line>
+            </svg>
+        </div>
+        <div>
+            <h1>Analytics Dashboard</h1>
+            <p>Real-time overview of your operations, leads, and performance</p>
+        </div>
     </div>
-    <div style="font-size:0.8rem; color:var(--text-muted);">Last updated: <?php echo date('d M Y, H:i'); ?></div>
+    <div style="font-size:0.8rem; color:var(--text-muted); background:var(--bg-card); padding:6px 14px; border-radius:8px; border:1px solid var(--border);">
+        Last updated: <?php echo date('d M Y, H:i'); ?>
+    </div>
 </div>
 
 <!-- KPI Stats -->
-<div class="stats-grid" style="grid-template-columns:repeat(6,1fr); margin-bottom:2rem;">
-    <?php
-    $kpis = [
-        ['label'=>'Total Leads',    'value'=>number_format($total_leads),    'color'=>'var(--primary)', 'icon'=>'📋'],
-        ['label'=>'Approved',       'value'=>number_format($approved_leads), 'color'=>'var(--success)', 'icon'=>'✅'],
-        ['label'=>'Pending QC',     'value'=>number_format($pending_leads),  'color'=>'var(--warning)', 'icon'=>'⏳'],
-        ['label'=>'Active Agents',  'value'=>number_format($total_agents),   'color'=>'var(--accent)',  'icon'=>'👥'],
-        ['label'=>'Wallet Pool',    'value'=>'₹'.number_format($total_wallet,0), 'color'=>'var(--success)', 'icon'=>'💰'],
-        ['label'=>'Merchants',      'value'=>number_format($total_merchants),'color'=>'var(--primary)', 'icon'=>'🏪'],
-    ];
-    foreach ($kpis as $k):
-    ?>
-    <div class="stat-card glass-card" style="text-align:center;">
-        <div style="font-size:1.5rem; margin-bottom:0.25rem;"><?php echo $k['icon']; ?></div>
-        <div class="stat-label"><?php echo $k['label']; ?></div>
-        <div class="stat-value" style="color:<?php echo $k['color']; ?>; font-size:1.5rem;"><?php echo $k['value']; ?></div>
+<div class="stats-grid" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));">
+    <div class="stat-card glass-card">
+        <div class="stat-card-text"><div class="stat-label">Total Leads</div><div class="stat-value"><?php echo number_format($total_leads); ?></div></div>
+        <div class="stat-card-icon" style="background:rgba(37,99,235,0.08);color:var(--primary);">
+            <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2z"></path></svg>
+        </div>
     </div>
-    <?php endforeach; ?>
+    <div class="stat-card glass-card">
+        <div class="stat-card-text"><div class="stat-label">Approved</div><div class="stat-value" style="color:var(--success);"><?php echo number_format($approved_leads); ?></div></div>
+        <div class="stat-card-icon" style="background:rgba(16,185,129,0.08);color:var(--success);">
+            <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"></path></svg>
+        </div>
+    </div>
+    <div class="stat-card glass-card">
+        <div class="stat-card-text"><div class="stat-label">Pending QC</div><div class="stat-value" style="color:var(--warning);"><?php echo number_format($pending_leads); ?></div></div>
+        <div class="stat-card-icon" style="background:rgba(245,158,11,0.08);color:var(--warning);">
+            <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+        </div>
+    </div>
+    <div class="stat-card glass-card">
+        <div class="stat-card-text"><div class="stat-label">Active Agents</div><div class="stat-value" style="color:var(--accent);"><?php echo number_format($total_agents); ?></div></div>
+        <div class="stat-card-icon" style="background:rgba(8,145,178,0.08);color:var(--accent);">
+            <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+        </div>
+    </div>
+    <div class="stat-card glass-card">
+        <div class="stat-card-text"><div class="stat-label">Wallet Pool</div><div class="stat-value" style="color:var(--success);">&#8377;<?php echo number_format($total_wallet,0); ?></div></div>
+        <div class="stat-card-icon" style="background:rgba(16,185,129,0.08);color:var(--success);">
+            <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
+        </div>
+    </div>
+    <div class="stat-card glass-card">
+        <div class="stat-card-text"><div class="stat-label">Merchants</div><div class="stat-value"><?php echo number_format($total_merchants); ?></div></div>
+        <div class="stat-card-icon" style="background:rgba(37,99,235,0.08);color:var(--primary);">
+            <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><path d="M9 22V12h6v10"></path></svg>
+        </div>
+    </div>
 </div>
 
 <!-- Charts Row 1 -->
@@ -188,11 +216,11 @@ new Chart(document.getElementById('leadsChart'), {
             backgroundColor: 'rgba(79,70,229,0.1)',
             fill: true,
             tension: 0.4,
-            pointBackgroundColor: '#4f46e5',
+            pointBackgroundColor: '#2563eb',
             pointRadius: 5,
         }]
     },
-    options: { ...chartDefaults, scales: { y: { beginAtZero: true, ticks: { color: '#475569' } }, x: { ticks: { color: '#475569' } } } }
+    options: { ...chartDefaults, scales: { y: { beginAtZero: true, ticks: { color: getComputedStyle(document.body).getPropertyValue('--text-muted').trim() || '#64748b' } }, x: { ticks: { color: '#64748b' } } } }
 });
 
 // Status Pie Chart

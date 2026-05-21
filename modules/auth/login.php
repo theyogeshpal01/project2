@@ -3,11 +3,11 @@ session_start();
 include_once '../../core/config.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $email = $_POST['email'];
-    $password = $_POST['password'];
+    $email = trim($_POST['email'] ?? '');
+    $password = $_POST['password'] ?? '';
 
-    // 1. Check for Super Admin Bypass (Setup Phase)
-    if ($email === 'admin@contractum.com' && $password === 'admin123') {
+    // 1. Check for Super Admin Bypass (Allowing both contractum.com and constractum.com spellings)
+    if (($email === 'admin@contractum.com' || $email === 'admin@constractum.com') && $password === 'admin123') {
         $_SESSION['user_id'] = 1;
         $_SESSION['role_id'] = 1;
         $_SESSION['role_name'] = 'Admin';
@@ -19,20 +19,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     // 2. Database Check
-    $stmt = $pdo->prepare("SELECT u.*, r.role_name FROM users u JOIN roles r ON u.role_id = r.id WHERE u.email = ?");
-    $stmt->execute([$email]);
-    $user = $stmt->fetch();
+    try {
+        $stmt = $pdo->prepare("SELECT u.*, r.role_name FROM users u JOIN roles r ON u.role_id = r.id WHERE u.email = ?");
+        $stmt->execute([$email]);
+        $user = $stmt->fetch();
 
-    if ($user && password_verify($password, $user['password'])) {
-        $_SESSION['user_id'] = $user['id'];
-        $_SESSION['role_id'] = $user['role_id'];
-        $_SESSION['role_name'] = $user['role_name'];
-        $_SESSION['user_name'] = $user['name'];
+        if ($user && password_verify($password, $user['password'])) {
+            $_SESSION['user_id'] = $user['id'];
+            $_SESSION['role_id'] = $user['role_id'];
+            $_SESSION['role_name'] = $user['role_name'];
+            $_SESSION['user_name'] = $user['name'];
 
-        header("Location: ../../index.php");
-        exit();
-    } else {
-        $error = "Invalid credentials.";
+            header("Location: ../../index.php");
+            exit();
+        } else {
+            $error = "Invalid credentials.";
+        }
+    } catch (Exception $e) {
+        $error = "Database connection error.";
     }
 }
 ?>
@@ -50,6 +54,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             align-items: center;
             height: 100vh;
             background: #0f172a;
+            margin: 0;
+            font-family: 'Inter', sans-serif;
         }
 
         .login-card {

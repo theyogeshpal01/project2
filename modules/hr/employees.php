@@ -26,23 +26,60 @@ $total_payroll  = $pdo->query("SELECT SUM(net_payable) FROM payroll WHERE month=
 ?>
 
 <div class="page-header">
-    <div>
-        <h1>HR — Employee Management</h1>
-        <p>Manage employees, track attendance, and oversee payroll.</p>
+    <div class="page-header-left">
+        <div class="page-header-icon" style="background:rgba(37,99,235,0.1);color:var(--primary);">
+            <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+        </div>
+        <div>
+            <h1>Employees</h1>
+            <p>Manage employees, track attendance, and oversee payroll</p>
+        </div>
     </div>
-    <a href="<?php echo BASE_URL; ?>modules/team/users.php" class="btn btn-primary">+ Add Employee</a>
+    <div class="page-header-actions">
+        <a href="<?php echo BASE_URL; ?>modules/hr/employees.php" class="btn">Export</a>
+        <a href="<?php echo BASE_URL; ?>modules/team/users.php" class="btn btn-primary">+ Add Employee</a>
+    </div>
 </div>
 
 <?php if (isset($success)): ?><div class="alert alert-success"><?php echo $success; ?></div><?php endif; ?>
 
-<div class="stats-grid" style="grid-template-columns:repeat(4,1fr); margin-bottom:2rem;">
-    <div class="stat-card glass-card"><div class="stat-label">Total Employees</div><div class="stat-value"><?php echo count($employees); ?></div></div>
-    <div class="stat-card glass-card"><div class="stat-label">Active</div><div class="stat-value" style="color:var(--success);"><?php echo $total_active; ?></div></div>
-    <div class="stat-card glass-card"><div class="stat-label">Inactive</div><div class="stat-value" style="color:var(--danger);"><?php echo $total_inactive; ?></div></div>
-    <div class="stat-card glass-card"><div class="stat-label">This Month Payroll</div><div class="stat-value">₹<?php echo number_format($total_payroll,0); ?></div></div>
+<div class="stats-grid" style="grid-template-columns:repeat(4,1fr);">
+    <div class="stat-card glass-card">
+        <div class="stat-card-text"><div class="stat-label">Total Employees</div><div class="stat-value"><?php echo count($employees); ?></div></div>
+        <div class="stat-card-icon" style="background:rgba(37,99,235,0.08);color:var(--primary);">
+            <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg>
+        </div>
+    </div>
+    <div class="stat-card glass-card">
+        <div class="stat-card-text"><div class="stat-label">Active</div><div class="stat-value" style="color:var(--success);"><?php echo $total_active; ?></div></div>
+        <div class="stat-card-icon" style="background:rgba(16,185,129,0.08);color:var(--success);">
+            <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline></svg>
+        </div>
+    </div>
+    <div class="stat-card glass-card">
+        <div class="stat-card-text"><div class="stat-label">Inactive</div><div class="stat-value" style="color:var(--danger);"><?php echo $total_inactive; ?></div></div>
+        <div class="stat-card-icon" style="background:rgba(239,68,68,0.08);color:var(--danger);">
+            <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+        </div>
+    </div>
+    <div class="stat-card glass-card">
+        <div class="stat-card-text"><div class="stat-label">This Month Payroll</div><div class="stat-value" style="color:var(--accent);">₹<?php echo number_format($total_payroll,0); ?></div></div>
+        <div class="stat-card-icon" style="background:rgba(8,145,178,0.08);color:var(--accent);">
+            <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+        </div>
+    </div>
 </div>
 
-<div class="glass-card" style="padding:1.5rem;">
+<div class="glass-card table-card" style="margin-top:1.5rem;">
+    <div class="table-header">
+        <div>
+            <h3 style="font-size:0.95rem;font-weight:700;">Employee Directory</h3>
+            <p style="font-size:0.78rem;color:var(--text-muted);margin-top:2px;">All <?php echo count($employees); ?> employees</p>
+        </div>
+    </div>
     <div class="data-table-container">
         <table>
             <thead>
@@ -83,6 +120,7 @@ $total_payroll  = $pdo->query("SELECT SUM(net_payable) FROM payroll WHERE month=
                 <?php endforeach; ?>
             </tbody>
         </table>
+    </div>
     </div>
 </div>
 

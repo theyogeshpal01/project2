@@ -1,6 +1,6 @@
 // Contractum ERP — Main JS
 
-// Active nav link highlight
+// Active nav link highlight (fallback for server-side PHP highlight)
 document.querySelectorAll('.nav-link').forEach(link => {
     if (link.href === window.location.href) {
         link.classList.add('active');
@@ -25,9 +25,8 @@ document.querySelectorAll('[data-confirm]').forEach(el => {
     });
 });
 
-// Table row hover highlight
+// Table row hover highlight using CSS variable
 document.querySelectorAll('tbody tr').forEach(row => {
-    row.style.transition = 'background 0.15s';
-    row.addEventListener('mouseenter', () => row.style.background = 'rgba(79,70,229,0.04)');
+    row.addEventListener('mouseenter', () => row.style.background = 'var(--bg-main)');
     row.addEventListener('mouseleave', () => row.style.background = '');
 });

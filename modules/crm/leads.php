@@ -15,44 +15,46 @@ $approved_count = $pdo->query("SELECT COUNT(*) FROM form_responses WHERE status 
 $rejected_count = $pdo->query("SELECT COUNT(*) FROM form_responses WHERE status = 'rejected'")->fetchColumn();
 ?>
 
-<div class="header-actions" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+<div class="page-header" style="align-items:flex-start;">
     <div>
-        <h1 style="font-size: 1.5rem; margin-bottom: 0.25rem;">Lead Management</h1>
-        <p style="color: var(--text-muted); font-size: 0.875rem;">Track, qualify, and convert your leads through the lifecycle.</p>
+        <h1 style="font-size:1.5rem;font-weight:700;color:var(--text-dark);">Lead Management</h1>
+        <p style="color:var(--text-muted);font-size:0.875rem;">Track, qualify, and convert your leads through the lifecycle.</p>
     </div>
-    <a href="create_lead.php" class="btn btn-primary">
-        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"></path></svg>
-        New Lead (Typeform)
-    </a>
+    <div style="display:flex;gap:10px;">
+        <a href="create_lead.php" class="btn btn-primary">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"></path></svg>
+            New Lead (Typeform)
+        </a>
+    </div>
 </div>
 
 <!-- Lead Lifecycle Stats -->
-<div class="stats-grid" style="grid-template-columns: repeat(5, 1fr); margin-bottom: 2rem;">
-    <div class="stat-card glass-card" style="text-align: center; border-bottom: 3px solid var(--primary);">
-        <div class="stat-label">Pending</div>
-        <div class="stat-value"><?php echo $new_count; ?></div>
+<div class="stats-grid" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 1.5rem;">
+    <div class="stat-card glass-card" style="text-align: center; padding: 1.5rem; border-bottom: 3px solid var(--primary);">
+        <div style="font-size: 2rem; font-weight: 700; color: var(--primary);"><?php echo $new_count; ?></div>
+        <div style="font-size: 0.875rem; color: var(--text-muted); margin-top: 5px;">Pending</div>
     </div>
-    <div class="stat-card glass-card" style="text-align: center; border-bottom: 3px solid var(--warning);">
-        <div class="stat-label">In Review</div>
-        <div class="stat-value"><?php echo $process_count; ?></div>
+    <div class="stat-card glass-card" style="text-align: center; padding: 1.5rem; border-bottom: 3px solid var(--warning);">
+        <div style="font-size: 2rem; font-weight: 700; color: var(--warning);"><?php echo $process_count; ?></div>
+        <div style="font-size: 0.875rem; color: var(--text-muted); margin-top: 5px;">In Review</div>
     </div>
-    <div class="stat-card glass-card" style="text-align: center; border-bottom: 3px solid var(--success);">
-        <div class="stat-label">QC Approved</div>
-        <div class="stat-value"><?php echo $approved_count; ?></div>
+    <div class="stat-card glass-card" style="text-align: center; padding: 1.5rem; border-bottom: 3px solid var(--success);">
+        <div style="font-size: 2rem; font-weight: 700; color: var(--success);"><?php echo $approved_count; ?></div>
+        <div style="font-size: 0.875rem; color: var(--text-muted); margin-top: 5px;">QC Approved</div>
     </div>
-    <div class="stat-card glass-card" style="text-align: center; border-bottom: 3px solid var(--danger);">
-        <div class="stat-label">Rejected</div>
-        <div class="stat-value"><?php echo $rejected_count; ?></div>
+    <div class="stat-card glass-card" style="text-align: center; padding: 1.5rem; border-bottom: 3px solid var(--danger);">
+        <div style="font-size: 2rem; font-weight: 700; color: var(--danger);"><?php echo $rejected_count; ?></div>
+        <div style="font-size: 0.875rem; color: var(--text-muted); margin-top: 5px;">Rejected</div>
     </div>
 </div>
 
 <!-- Leads List -->
 <div class="glass-card" style="padding: 1.5rem;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-        <h3 style="font-size: 1.125rem;">Recent Leads</h3>
+        <h3 style="font-size: 1rem; font-weight: 600;">Recent Leads</h3>
         <div style="display: flex; gap: 10px;">
-            <input type="text" placeholder="Search leads..." style="background: var(--bg-main); border: 1px solid var(--border); padding: 8px 15px; border-radius: 8px; color: white; font-size: 0.875rem;">
-            <button class="btn glass-card" style="background: rgba(255,255,255,0.05); padding: 8px 12px;">Filter</button>
+            <input type="text" placeholder="Search leads..." class="form-control" style="width: 250px;">
+            <button class="btn glass-card">Filter</button>
         </div>
     </div>
 
@@ -94,13 +96,13 @@ $rejected_count = $pdo->query("SELECT COUNT(*) FROM form_responses WHERE status 
                                 default: $status_class = 'muted';
                             }
                         ?>
-                        <span style="display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; background: var(--bg-card); border: 1px solid var(--border); color: var(--text-main);">
+                        <span class="badge badge-<?php echo $status_class; ?>">
                             <?php echo str_replace('_', ' ', $lead['status']); ?>
                         </span>
                     </td>
-                    <td><?php echo date('M d, H:i', strtotime($lead['created_at'])); ?></td>
+                    <td style="font-size: 0.875rem; color: var(--text-muted);"><?php echo date('M d, H:i', strtotime($lead['created_at'])); ?></td>
                     <td>
-                        <button class="btn glass-card" style="padding: 5px 10px; font-size: 0.75rem;">Manage</button>
+                        <button class="btn btn-primary" style="padding: 4px 8px; font-size: 0.75rem;">Manage</button>
                     </td>
                 </tr>
                 <?php endforeach; ?>
