@@ -12,10 +12,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_user'])) {
     $role_id = (int) $_POST['role_id'];
     $team_id = $_POST['team_id'] ?: null;
     $manager_id = $_POST['manager_id'] ?: null;
+    $phone = trim($_POST['phone'] ?? '');
 
     try {
-        $pdo->prepare("INSERT INTO users (name, email, password, role_id, team_id, manager_id) VALUES (?,?,?,?,?,?)")
-            ->execute([$name, $email, $password, $role_id, $team_id, $manager_id]);
+        $pdo->prepare("INSERT INTO users (name, email, password, role_id, team_id, manager_id, phone) VALUES (?,?,?,?,?,?,?)")
+            ->execute([$name, $email, $password, $role_id, $team_id, $manager_id, $phone ?: null]);
         $success = "User '$name' added successfully!";
     } catch (Exception $e) {
         $error = "Error: " . $e->getMessage();
@@ -31,14 +32,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_user'])) {
     $team_id = $_POST['team_id'] ?: null;
     $manager_id = $_POST['manager_id'] ?: null;
     $status = $_POST['status'];
+    $phone = trim($_POST['phone'] ?? '');
 
     try {
         if (!empty($_POST['password'])) {
-            $pdo->prepare("UPDATE users SET name=?, email=?, password=?, role_id=?, team_id=?, manager_id=?, status=? WHERE id=?")
-                ->execute([$name, $email, password_hash($_POST['password'], PASSWORD_DEFAULT), $role_id, $team_id, $manager_id, $status, $uid]);
+            $pdo->prepare("UPDATE users SET name=?, email=?, password=?, role_id=?, team_id=?, manager_id=?, status=?, phone=? WHERE id=?")
+                ->execute([$name, $email, password_hash($_POST['password'], PASSWORD_DEFAULT), $role_id, $team_id, $manager_id, $status, $phone ?: null, $uid]);
         } else {
-            $pdo->prepare("UPDATE users SET name=?, email=?, role_id=?, team_id=?, manager_id=?, status=? WHERE id=?")
-                ->execute([$name, $email, $role_id, $team_id, $manager_id, $status, $uid]);
+            $pdo->prepare("UPDATE users SET name=?, email=?, role_id=?, team_id=?, manager_id=?, status=?, phone=? WHERE id=?")
+                ->execute([$name, $email, $role_id, $team_id, $manager_id, $status, $phone ?: null, $uid]);
         }
         $success = "User updated successfully!";
     } catch (Exception $e) {
@@ -63,12 +65,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_user'])) {
     }
 }
 
-$users = $pdo->query("SELECT u.*, r.role_name, t.team_name, m.name as manager_name, d.dept_name
+$users = $pdo->query("SELECT u.*, r.role_name, t.team_name, m.name as manager_name
     FROM users u
     LEFT JOIN roles r ON u.role_id = r.id
     LEFT JOIN teams t ON u.team_id = t.id
     LEFT JOIN users m ON u.manager_id = m.id
-    LEFT JOIN departments d ON u.department_id = d.id
     ORDER BY u.created_at DESC")->fetchAll();
 
 $roles = getRoles($pdo);
@@ -87,7 +88,7 @@ $designations = $pdo->query("SELECT COUNT(DISTINCT role_id) FROM users")->fetchC
         <h1 style="font-size:1.5rem;font-weight:700;color:var(--text-dark);">Employees Management</h1>
         <p style="color:var(--text-muted);font-size:0.875rem;">Manage employees added by you</p>
         <div style="display:flex;gap:10px;margin-top:1rem;">
-            <button class="btn btn-primary" style="background:#f8fafc;color:var(--primary);border:1px solid #e2e8f0;">
+            <button class="btn btn-primary" style="background:#000000;color:var(--primary);border:1px solid #e2e8f0;">
                 <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg> Employees
             </button>
             <button class="btn" style="background:transparent;color:var(--text-muted);border:none;">
@@ -205,12 +206,14 @@ $designations = $pdo->query("SELECT COUNT(DISTINCT role_id) FROM users")->fetchC
                         </td>
                         <td>
                             <div style="display:flex; gap:6px; align-items:center;">
-                                <button onclick='openEditModal(<?php echo htmlspecialchars(json_encode($user), ENT_QUOTES); ?>)' class="btn btn-primary" style="padding:4px 8px;font-size:0.75rem;">Edit</button>
-                                <button class="btn btn-danger" style="padding:4px 8px;font-size:0.75rem;"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg></button>
-                                <button class="btn btn-success" style="padding:4px 8px;font-size:0.75rem;">Profile</button>
-                                
+                                <button
+                                    class="btn btn-primary"
+                                    style="padding:4px 8px;font-size:0.75rem;"
+                                    data-user="<?php echo htmlspecialchars(json_encode(array_intersect_key($user, array_flip(['id','name','email','phone','role_id','team_id','manager_id','status']))), ENT_QUOTES); ?>"
+                                    onclick="openEditModal(this)">Edit</button>
+
                                 <?php if ($user['id'] != $current_user_id): ?>
-                                    <form method="POST" style="display:inline;" onsubmit="return confirm('Delete user? This cannot be undone.')">
+                                    <form method="POST" style="display:inline;" onsubmit="return confirm('Delete this user? This cannot be undone.')">
                                         <input type="hidden" name="user_id" value="<?php echo $user['id']; ?>">
                                         <button type="submit" name="delete_user" value="1" class="btn btn-danger" style="padding:4px 8px;font-size:0.75rem;">Delete</button>
                                     </form>
@@ -244,8 +247,12 @@ $designations = $pdo->query("SELECT COUNT(DISTINCT role_id) FROM users")->fetchC
                 <div class="form-group"><label class="form-label">Email *</label><input type="email" name="email"
                         class="form-control" required></div>
             </div>
-            <div class="form-group"><label class="form-label">Password *</label><input type="password" name="password"
-                    class="form-control" required placeholder="Min. 6 characters"></div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+                <div class="form-group"><label class="form-label">Password *</label><input type="password" name="password"
+                        class="form-control" required placeholder="Min. 6 characters"></div>
+                <div class="form-group"><label class="form-label">Phone Number</label><input type="tel" name="phone"
+                        class="form-control" placeholder="e.g. +91 98765 43210" maxlength="20"></div>
+            </div>
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
                 <div class="form-group">
                     <label class="form-label">Role *</label>
@@ -303,10 +310,14 @@ $designations = $pdo->query("SELECT COUNT(DISTINCT role_id) FROM users")->fetchC
                 <div class="form-group"><label class="form-label">Email *</label><input type="email" name="email"
                         id="edit-email" class="form-control" required></div>
             </div>
-            <div class="form-group"><label class="form-label">New Password <span
-                        style="color:var(--text-muted); font-weight:400;">(leave blank to keep
-                        current)</span></label><input type="password" name="password" class="form-control"
-                    placeholder="Leave blank to keep current"></div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+                <div class="form-group"><label class="form-label">New Password <span
+                            style="color:var(--text-muted); font-weight:400;">(leave blank to keep
+                            current)</span></label><input type="password" name="password" class="form-control"
+                        placeholder="Leave blank to keep current"></div>
+                <div class="form-group"><label class="form-label">Phone Number</label><input type="tel" name="phone"
+                        id="edit-phone" class="form-control" placeholder="e.g. +91 98765 43210" maxlength="20"></div>
+            </div>
             <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:1rem;">
                 <div class="form-group">
                     <label class="form-label">Role *</label>
@@ -358,10 +369,12 @@ $designations = $pdo->query("SELECT COUNT(DISTINCT role_id) FROM users")->fetchC
         document.getElementById('add-user-modal').classList.add('open');
     }
 
-    function openEditModal(user) {
+    function openEditModal(btn) {
+        var user = JSON.parse(btn.getAttribute('data-user'));
         document.getElementById('edit-user-id').value = user.id;
         document.getElementById('edit-name').value = user.name;
-        document.getElementById('edit-email').value = user.email;
+        document.getElementById('edit-email').value = user.email || '';
+        document.getElementById('edit-phone').value = user.phone || '';
         document.getElementById('edit-role').value = user.role_id;
         document.getElementById('edit-status').value = user.status;
         document.getElementById('edit-team').value = user.team_id || '';

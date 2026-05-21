@@ -34,7 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // Fetch today's record for current user
 $stmt = $pdo->prepare("SELECT * FROM attendance WHERE user_id = ? AND attendance_date = ?");
 $stmt->execute([$user_id, $today]);
-$my_attendance = $stmt->fetch();
+$my_attendance = $stmt->fetch() ?: []; // empty array if no record today
 
 // Admin data
 $filter_date = $_GET['date'] ?? $today;
@@ -71,7 +71,7 @@ $tab = $_GET['tab'] ?? 'my_attendance';
         <p style="color:var(--text-muted);font-size:0.875rem;">Manage and track employee attendance</p>
     </div>
     <div style="display:flex;gap:10px;">
-        <button class="btn btn-primary" style="background:#f8fafc;color:var(--primary);border:1px solid #e2e8f0;">
+        <button class="btn btn-primary" style="background:#000000;color:var(--primary);border:1px solid #e2e8f0;">
             <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"></path><path d="M21 3v5h-5"></path></svg> Refresh
         </button>
         <button class="btn btn-primary" onclick="alert('Location tracked.')">
@@ -93,18 +93,20 @@ $tab = $_GET['tab'] ?? 'my_attendance';
         </h3>
         <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
             <span style="color:var(--text-muted);font-size:0.875rem;">Punch In at</span>
-            <span style="font-weight:600;"><?php echo $my_attendance['check_in'] ? date('h:i A', strtotime($my_attendance['check_in'])) : '--'; ?></span>
+            <span style="font-weight:600;"><?php echo !empty($my_attendance['check_in'] ?? null) ? date('h:i A', strtotime($my_attendance['check_in'])) : '--'; ?></span>
         </div>
         <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
             <span style="color:var(--text-muted);font-size:0.875rem;">Punch Out at</span>
-            <span style="font-weight:600;"><?php echo $my_attendance['check_out'] ? date('h:i A', strtotime($my_attendance['check_out'])) : '--'; ?></span>
+            <span style="font-weight:600;"><?php echo !empty($my_attendance['check_out'] ?? null) ? date('h:i A', strtotime($my_attendance['check_out'])) : '--'; ?></span>
         </div>
         <div style="display:flex;justify-content:space-between;margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border);">
             <span style="color:var(--text-muted);font-size:0.875rem;">Total Hours</span>
             <span style="font-weight:600;color:var(--primary);">
-                <?php 
-                if ($my_attendance['check_in'] && $my_attendance['check_out']) {
-                    echo round((strtotime($my_attendance['check_out']) - strtotime($my_attendance['check_in'])) / 3600, 2) . ' hrs';
+                <?php
+                $ci = $my_attendance['check_in']  ?? null;
+                $co = $my_attendance['check_out'] ?? null;
+                if ($ci && $co) {
+                    echo round((strtotime($co) - strtotime($ci)) / 3600, 2) . ' hrs';
                 } else {
                     echo '--';
                 }
@@ -122,14 +124,14 @@ $tab = $_GET['tab'] ?? 'my_attendance';
             <form method="POST" style="flex:1;">
                 <input type="hidden" name="lat" id="lat1">
                 <input type="hidden" name="lng" id="lng1">
-                <button type="submit" name="check_in" class="btn btn-success" style="width:100%;padding:0.75rem;display:flex;justify-content:center;align-items:center;gap:8px;" <?php echo ($my_attendance['check_in']) ? 'disabled' : ''; ?>>
+                <button type="submit" name="check_in" class="btn btn-success" style="width:100%;padding:0.75rem;display:flex;justify-content:center;align-items:center;gap:8px;" <?php echo (!empty($my_attendance['check_in'])) ? 'disabled' : ''; ?>>
                     <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 18l-6-6 6-6"></path></svg> Punch In
                 </button>
             </form>
             <form method="POST" style="flex:1;">
                 <input type="hidden" name="lat" id="lat2">
                 <input type="hidden" name="lng" id="lng2">
-                <button type="submit" name="check_out" class="btn btn-danger" style="width:100%;padding:0.75rem;display:flex;justify-content:center;align-items:center;gap:8px;" <?php echo (!$my_attendance['check_in'] || $my_attendance['check_out']) ? 'disabled' : ''; ?>>
+                <button type="submit" name="check_out" class="btn btn-danger" style="width:100%;padding:0.75rem;display:flex;justify-content:center;align-items:center;gap:8px;" <?php echo (empty($my_attendance['check_in']) || !empty($my_attendance['check_out'])) ? 'disabled' : ''; ?>>
                     Punch Out <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10 6l6 6-6 6"></path></svg>
                 </button>
             </form>
