@@ -2,9 +2,12 @@
 include_once '../../includes/header.php'; 
 include_once '../../core/functions.php';
 
+$company_id = $_SESSION['company_id'] ?? 1;
+
 $salaries = $pdo->query("SELECT p.*, u.name, u.wallet_balance 
                         FROM payroll p 
                         JOIN users u ON p.user_id = u.id 
+                        WHERE p.company_id = $company_id
                         ORDER BY p.year DESC, p.month DESC")->fetchAll();
 
 $months = [

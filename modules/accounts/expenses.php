@@ -3,6 +3,7 @@ include_once '../../includes/header.php';
 
 $categories   = ['Travel', 'Food', 'Office', 'Marketing', 'IT', 'Other'];
 $payment_modes = ['cash' => 'Cash', 'bank' => 'Bank Transfer', 'upi' => 'UPI', 'cheque' => 'Cheque'];
+$company_id   = $_SESSION['company_id'] ?? 1;
 
 $msg_success = '';
 $msg_error   = '';
@@ -13,10 +14,11 @@ $msg_error   = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'add') {
     try {
         $stmt = $pdo->prepare(
-            "INSERT INTO expenses (title, amount, category, paid_to, payment_mode, expense_date, added_by, created_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, NOW())"
+            "INSERT INTO expenses (company_id, title, amount, category, paid_to, payment_mode, expense_date, added_by, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())"
         );
         $stmt->execute([
+            $company_id,
             trim($_POST['title']),
             (float) $_POST['amount'],
             $_POST['category'],
@@ -37,7 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'edit') {
     try {
         $stmt = $pdo->prepare(
-            "UPDATE expenses SET title=?, amount=?, category=?, paid_to=?, payment_mode=?, expense_date=? WHERE id=?"
+            "UPDATE expenses SET title=?, amount=?, category=?, paid_to=?, payment_mode=?, expense_date=? WHERE id=? AND company_id=?"
         );
         $stmt->execute([
             trim($_POST['title']),
@@ -46,7 +48,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             trim($_POST['paid_to']),
             $_POST['payment_mode'],
             $_POST['expense_date'],
-            (int) $_POST['expense_id']
+            (int) $_POST['expense_id'],
+            $company_id
         ]);
         $msg_success = 'Expense updated successfully!';
     } catch (Exception $e) {
@@ -59,8 +62,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 ────────────────────────────────────────────────────────────── */
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'delete') {
     try {
-        $stmt = $pdo->prepare("DELETE FROM expenses WHERE id=?");
-        $stmt->execute([(int) $_POST['expense_id']]);
+        $stmt = $pdo->prepare("DELETE FROM expenses WHERE id=? AND company_id=?");
+        $stmt->execute([(int) $_POST['expense_id'], $company_id]);
         $msg_success = 'Expense deleted successfully!';
     } catch (Exception $e) {
         $msg_error = 'Error deleting expense: ' . $e->getMessage();
@@ -78,8 +81,8 @@ $filter_to    = $_GET['date_to']    ?? '';
    FETCH ALL EXPENSES (with optional filters)
 ────────────────────────────────────────────────────────────── */
 try {
-    $where  = [];
-    $params = [];
+    $where  = ['e.company_id = ?'];
+    $params = [$company_id];
 
     if ($filter_cat !== '') {
         $where[]  = 'e.category = ?';
@@ -113,14 +116,14 @@ try {
    STATS
 ────────────────────────────────────────────────────────────── */
 try {
-    $total_all   = $pdo->query("SELECT COALESCE(SUM(amount),0) FROM expenses")->fetchColumn();
+    $total_all   = $pdo->query("SELECT COALESCE(SUM(amount),0) FROM expenses WHERE company_id = $company_id")->fetchColumn();
     $total_month = $pdo->query(
         "SELECT COALESCE(SUM(amount),0) FROM expenses
-         WHERE MONTH(expense_date)=MONTH(NOW()) AND YEAR(expense_date)=YEAR(NOW())"
+         WHERE MONTH(expense_date)=MONTH(NOW()) AND YEAR(expense_date)=YEAR(NOW()) AND company_id = $company_id"
     )->fetchColumn();
     // Category counts
     $cat_rows = $pdo->query(
-        "SELECT category, COUNT(*) as cnt FROM expenses GROUP BY category"
+        "SELECT category, COUNT(*) as cnt FROM expenses WHERE company_id = $company_id GROUP BY category"
     )->fetchAll(PDO::FETCH_KEY_PAIR);
 } catch (Exception $e) {
     $total_all   = 0;

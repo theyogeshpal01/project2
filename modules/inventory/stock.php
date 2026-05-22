@@ -13,12 +13,14 @@ try {
     $pdo->exec("ALTER TABLE inventory ADD COLUMN IF NOT EXISTS cost_price DECIMAL(10,2) DEFAULT 0.00");
 } catch (Exception $e) { /* silently continue */ }
 
+$company_id = $_SESSION['company_id'] ?? 1;
+
 // ── Handle DELETE ──────────────────────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_item'])) {
     try {
         $del_id = (int)$_POST['delete_id'];
-        $stmt = $pdo->prepare("DELETE FROM inventory WHERE id = ?");
-        $stmt->execute([$del_id]);
+        $stmt = $pdo->prepare("DELETE FROM inventory WHERE id = ? AND company_id = ?");
+        $stmt->execute([$del_id, $company_id]);
         $success = "Item deleted successfully.";
     } catch (Exception $e) {
         $error = "Delete failed: " . $e->getMessage();
@@ -28,7 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_item'])) {
 // ── Handle EDIT ───────────────────────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_item'])) {
     try {
-        $stmt = $pdo->prepare("UPDATE inventory SET item_name=?, sku=?, category=?, total_qty=?, available_qty=?, cost_price=? WHERE id=?");
+        $stmt = $pdo->prepare("UPDATE inventory SET item_name=?, sku=?, category=?, total_qty=?, available_qty=?, cost_price=? WHERE id=? AND company_id=?");
         $stmt->execute([
             trim($_POST['item_name']),
             trim($_POST['sku']),
@@ -36,7 +38,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_item'])) {
             (int)$_POST['total_qty'],
             (int)$_POST['available_qty'],
             (float)$_POST['cost_price'],
-            (int)$_POST['edit_id']
+            (int)$_POST['edit_id'],
+            $company_id
         ]);
         $success = "Item updated successfully.";
     } catch (Exception $e) {
@@ -47,8 +50,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_item'])) {
 // ── Handle ADD ────────────────────────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_item'])) {
     try {
-        $stmt = $pdo->prepare("INSERT INTO inventory (item_name, sku, category, total_qty, available_qty, cost_price) VALUES (?,?,?,?,?,?)");
+        $stmt = $pdo->prepare("INSERT INTO inventory (company_id, item_name, sku, category, total_qty, available_qty, cost_price) VALUES (?,?,?,?,?,?,?)");
         $stmt->execute([
+            $company_id,
             trim($_POST['item_name']),
             trim($_POST['sku']),
             trim($_POST['category'] ?: 'General'),
@@ -64,7 +68,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_item'])) {
 
 // ── Fetch inventory ───────────────────────────────────────────────────────────
 try {
-    $inventory   = $pdo->query("SELECT * FROM inventory ORDER BY created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
+    $inventory   = $pdo->query("SELECT * FROM inventory WHERE company_id = $company_id ORDER BY created_at DESC")->fetchAll(PDO::FETCH_ASSOC);
     $total_items = count($inventory);
     $total_qty   = array_sum(array_column($inventory, 'available_qty'));
     $low_stock   = count(array_filter($inventory, fn($i) => (int)($i['available_qty'] ?? 0) < 5));

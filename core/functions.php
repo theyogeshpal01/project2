@@ -12,7 +12,7 @@ function redirect($url) {
 }
 
 /**
- * Get all roles
+ * Get all roles (Roles might be global for all companies, or we can filter if needed. Let's keep roles global for now)
  */
 function getRoles($pdo) {
     $stmt = $pdo->query("SELECT * FROM roles ORDER BY id ASC");
@@ -23,9 +23,11 @@ function getRoles($pdo) {
  * Get all teams with manager info
  */
 function getTeams($pdo) {
+    $company_id = $_SESSION['company_id'] ?? 1;
     $sql = "SELECT t.*, u.name as manager_name 
             FROM teams t 
             LEFT JOIN users u ON t.manager_id = u.id 
+            WHERE t.company_id = $company_id
             ORDER BY t.created_at DESC";
     $stmt = $pdo->query($sql);
     return $stmt->fetchAll();
@@ -65,16 +67,19 @@ function getStatusBadge($status) {
  * Get all leads with agent info
  */
 function getLeads($pdo, $agent_id = null) {
+    $company_id = $_SESSION['company_id'] ?? 1;
     $sql = "SELECT l.*, u.name as agent_name 
             FROM leads l 
-            LEFT JOIN users u ON l.agent_id = u.id";
+            LEFT JOIN users u ON l.agent_id = u.id
+            WHERE l.company_id = :company_id";
     
     if ($agent_id) {
-        $sql .= " WHERE l.agent_id = :agent_id";
+        $sql .= " AND l.agent_id = :agent_id";
     }
     
     $sql .= " ORDER BY l.created_at DESC";
     $stmt = $pdo->prepare($sql);
+    $stmt->bindParam(':company_id', $company_id);
     if ($agent_id) {
         $stmt->bindParam(':agent_id', $agent_id);
     }

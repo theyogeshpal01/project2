@@ -11,14 +11,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_form'])) {
     try {
         $pdo->beginTransaction();
         
-        $stmt = $pdo->prepare("INSERT INTO forms (title, description, created_by, status) VALUES (?, ?, ?, 'active')");
-        $stmt->execute([$title, $description, $_SESSION['user_id'] ?? 1]);
+        $company_id = $_SESSION['company_id'] ?? 1;
+        $stmt = $pdo->prepare("INSERT INTO forms (company_id, title, description, created_by, status) VALUES (?, ?, ?, ?, 'active')");
+        $stmt->execute([$company_id, $title, $description, $_SESSION['user_id'] ?? 1]);
         $form_id = $pdo->lastInsertId();
 
-        $stmtField = $pdo->prepare("INSERT INTO form_fields (form_id, field_label, field_type, field_options, is_required, sort_order) VALUES (?, ?, ?, ?, ?, ?)");
+        $stmtField = $pdo->prepare("INSERT INTO form_fields (company_id, form_id, field_label, field_type, field_options, is_required, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?)");
         
         foreach ($fields as $index => $field) {
             $stmtField->execute([
+                $company_id,
                 $form_id,
                 $field['label'],
                 $field['type'],

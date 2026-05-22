@@ -7,11 +7,38 @@ $user_id   = $_SESSION['user_id']   ?? 0;
 $user_name = $_SESSION['user_name'] ?? 'User';
 $role_name = $_SESSION['role_name'] ?? 'Admin';
 
+$company_id = $_SESSION['company_id'] ?? 1;
+
+function injectCompanyId($sql) {
+    global $company_id;
+    if ($company_id === 0) return $sql; // System Admin sees all (if company_id is 0)
+    // Very basic injection for dashboard queries
+    if (stripos($sql, 'WHERE') !== false) {
+        // Find the first WHERE and inject
+        $sql = preg_replace('/WHERE/i', "WHERE company_id = $company_id AND", $sql, 1);
+    } else {
+        // If there's a GROUP BY or ORDER BY, inject before it
+        if (stripos($sql, 'GROUP BY') !== false) {
+            $sql = preg_replace('/GROUP BY/i', "WHERE company_id = $company_id GROUP BY", $sql, 1);
+        } elseif (stripos($sql, 'ORDER BY') !== false) {
+            $sql = preg_replace('/ORDER BY/i', "WHERE company_id = $company_id ORDER BY", $sql, 1);
+        } else {
+            $sql .= " WHERE company_id = $company_id";
+        }
+    }
+    // Fix ambiguous columns for joins
+    $sql = str_replace("company_id =", "u.company_id =", $sql); // For queries joining users as u
+    $sql = str_replace("u.company_id = $company_id AND u.company_id =", "company_id =", $sql); // Revert double
+    return $sql;
+}
+
 function safeCount($pdo, $sql, $params = []) {
+    $sql = injectCompanyId($sql);
     try { $s = $pdo->prepare($sql); $s->execute($params); return $s->fetchColumn() ?: 0; }
     catch (Exception $e) { return 0; }
 }
 function safeQuery($pdo, $sql, $params = []) {
+    $sql = injectCompanyId($sql);
     try { $s = $pdo->prepare($sql); $s->execute($params); return $s->fetchAll(); }
     catch (Exception $e) { return []; }
 }

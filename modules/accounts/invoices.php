@@ -7,6 +7,7 @@ $success = '';
 $error   = '';
 
 // --- CREATE Invoice ---
+$company_id = $_SESSION['company_id'] ?? 1;
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_invoice'])) {
     try {
         $inv_no   = 'INV-' . date('Ymd') . '-' . strtoupper(substr(uniqid(), 0, 4));
@@ -26,12 +27,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_invoice'])) {
 
         $stmt = $pdo->prepare(
             "INSERT INTO invoices
-                (invoice_number, client_name, client_email, items, subtotal,
+                (company_id, invoice_number, client_name, client_email, items, subtotal,
                  gst_percent, gst_amount, total_amount, status, due_date, created_by)
-             VALUES (?,?,?,?,?,?,?,?,?,?,?)"
+             VALUES (?,?,?,?,?,?,?,?,?,?,?,?)"
         );
         $stmt->execute([
-            $inv_no, $client, $email, $items,
+            $company_id, $inv_no, $client, $email, $items,
             $subtotal, $gst_pct, $gst_amt, $total,
             $status, $due_date, $_SESSION['user_id']
         ]);
@@ -62,11 +63,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_invoice'])) {
             "UPDATE invoices
              SET client_name=?, client_email=?, subtotal=?, gst_percent=?,
                  gst_amount=?, total_amount=?, status=?, due_date=?
-             WHERE id=?"
+             WHERE id=? AND company_id=?"
         );
         $stmt->execute([
             $client, $email, $subtotal, $gst_pct,
-            $gst_amt, $total, $status, $due_date, $id
+            $gst_amt, $total, $status, $due_date, $id, $company_id
         ]);
         $success = 'Invoice updated successfully!';
     } catch (Exception $e) {
@@ -78,7 +79,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_invoice'])) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_invoice'])) {
     try {
         $id = (int) $_POST['inv_id'];
-        $pdo->prepare("DELETE FROM invoices WHERE id=?")->execute([$id]);
+        $pdo->prepare("DELETE FROM invoices WHERE id=? AND company_id=?")->execute([$id, $company_id]);
         $success = 'Invoice deleted successfully!';
     } catch (Exception $e) {
         $error = 'Error deleting invoice: ' . htmlspecialchars($e->getMessage());
@@ -92,6 +93,7 @@ try {
         "SELECT i.*, u.name AS created_by_name
          FROM invoices i
          LEFT JOIN users u ON i.created_by = u.id
+         WHERE i.company_id = $company_id
          ORDER BY i.created_at DESC"
     )->fetchAll(PDO::FETCH_ASSOC);
 } catch (Exception $e) {
@@ -102,9 +104,9 @@ try {
 // Stats
 try {
     $total_invoices = count($invoices);
-    $paid_sum       = $pdo->query("SELECT COALESCE(SUM(total_amount),0) FROM invoices WHERE status='paid'")->fetchColumn();
-    $pending_sum    = $pdo->query("SELECT COALESCE(SUM(total_amount),0) FROM invoices WHERE status IN ('draft','sent')")->fetchColumn();
-    $overdue_count  = $pdo->query("SELECT COUNT(*) FROM invoices WHERE status='overdue'")->fetchColumn();
+    $paid_sum       = $pdo->query("SELECT COALESCE(SUM(total_amount),0) FROM invoices WHERE status='paid' AND company_id=$company_id")->fetchColumn();
+    $pending_sum    = $pdo->query("SELECT COALESCE(SUM(total_amount),0) FROM invoices WHERE status IN ('draft','sent') AND company_id=$company_id")->fetchColumn();
+    $overdue_count  = $pdo->query("SELECT COUNT(*) FROM invoices WHERE status='overdue' AND company_id=$company_id")->fetchColumn();
 } catch (Exception $e) {
     $paid_sum = $pending_sum = $overdue_count = 0;
 }

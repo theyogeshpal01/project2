@@ -2,8 +2,12 @@
 include_once '../../includes/header.php'; 
 include_once '../../core/functions.php';
 
-$stmt = $pdo->query("SELECT f.*, (SELECT COUNT(*) FROM form_fields WHERE form_id = f.id) as field_count 
-                     FROM forms f ORDER BY f.created_at DESC");
+$company_id = $_SESSION['company_id'] ?? 1;
+
+$stmt = $pdo->query("SELECT f.*, (SELECT COUNT(*) FROM form_fields WHERE form_id = f.id AND company_id = $company_id) as field_count 
+                     FROM forms f 
+                     WHERE f.company_id = $company_id
+                     ORDER BY f.created_at DESC");
 $forms = $stmt->fetchAll();
 ?>
 

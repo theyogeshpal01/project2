@@ -13,6 +13,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['role_name'] = 'Admin';
         $_SESSION['user_name'] = 'System Admin';
         $_SESSION['kyc_status'] = 'verified';
+        $_SESSION['company_id'] = 1;
         
         header("Location: ../../index.php");
         exit();
@@ -29,6 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['role_id'] = $user['role_id'];
             $_SESSION['role_name'] = $user['role_name'];
             $_SESSION['user_name'] = $user['name'];
+            $_SESSION['company_id'] = $user['company_id'] ?? 1;
 
             header("Location: ../../index.php");
             exit();

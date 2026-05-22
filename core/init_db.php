@@ -61,19 +61,53 @@ function runSQL($pdo, $sql, $label) {
 
 // ===================== TABLES =====================
 
+runSQL($pdo, "CREATE TABLE IF NOT EXISTS companies (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    company_name VARCHAR(255) NOT NULL,
+    domain VARCHAR(255) UNIQUE,
+    contact_email VARCHAR(100),
+    contact_phone VARCHAR(20),
+    status ENUM('active','inactive','suspended') DEFAULT 'active',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)", "Table: companies");
+
+runSQL($pdo, "CREATE TABLE IF NOT EXISTS subscription_plans (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    plan_name VARCHAR(100) NOT NULL,
+    monthly_price DECIMAL(10,2),
+    annual_price DECIMAL(10,2),
+    max_users INT,
+    features JSON,
+    status ENUM('active','inactive') DEFAULT 'active',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)", "Table: subscription_plans");
+
+runSQL($pdo, "CREATE TABLE IF NOT EXISTS company_subscriptions (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    company_id INT NOT NULL,
+    plan_id INT NOT NULL,
+    start_date DATE,
+    end_date DATE,
+    status ENUM('active','expired','cancelled') DEFAULT 'active',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)", "Table: company_subscriptions");
+
 runSQL($pdo, "CREATE TABLE IF NOT EXISTS departments (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    company_id INT,
     dept_name VARCHAR(100) NOT NULL UNIQUE
 )", "Table: departments");
 
 runSQL($pdo, "CREATE TABLE IF NOT EXISTS roles (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    company_id INT,
     role_name VARCHAR(50) NOT NULL UNIQUE,
     permissions JSON
 )", "Table: roles");
 
 runSQL($pdo, "CREATE TABLE IF NOT EXISTS teams (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    company_id INT,
     team_name VARCHAR(100) NOT NULL,
     location VARCHAR(100),
     project_name VARCHAR(100),
@@ -83,6 +117,7 @@ runSQL($pdo, "CREATE TABLE IF NOT EXISTS teams (
 
 runSQL($pdo, "CREATE TABLE IF NOT EXISTS users (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    company_id INT,
     name VARCHAR(100) NOT NULL,
     email VARCHAR(100) NOT NULL UNIQUE,
     phone VARCHAR(20),
@@ -102,6 +137,7 @@ runSQL($pdo, "CREATE TABLE IF NOT EXISTS users (
 
 runSQL($pdo, "CREATE TABLE IF NOT EXISTS forms (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    company_id INT,
     title VARCHAR(255) NOT NULL,
     description TEXT,
     created_by INT,
@@ -111,6 +147,7 @@ runSQL($pdo, "CREATE TABLE IF NOT EXISTS forms (
 
 runSQL($pdo, "CREATE TABLE IF NOT EXISTS form_fields (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    company_id INT,
     form_id INT,
     field_label VARCHAR(255) NOT NULL,
     field_type ENUM('text','number','dropdown','checkbox','radio','file','photo','signature','location') NOT NULL,
@@ -121,6 +158,7 @@ runSQL($pdo, "CREATE TABLE IF NOT EXISTS form_fields (
 
 runSQL($pdo, "CREATE TABLE IF NOT EXISTS form_responses (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    company_id INT,
     form_id INT,
     agent_id INT,
     customer_name VARCHAR(100),
@@ -137,6 +175,7 @@ runSQL($pdo, "CREATE TABLE IF NOT EXISTS form_responses (
 
 runSQL($pdo, "CREATE TABLE IF NOT EXISTS leads (
     id VARCHAR(50) PRIMARY KEY,
+    company_id INT,
     agent_id INT,
     customer_name VARCHAR(100),
     mobile VARCHAR(20),
@@ -150,6 +189,7 @@ runSQL($pdo, "CREATE TABLE IF NOT EXISTS leads (
 
 runSQL($pdo, "CREATE TABLE IF NOT EXISTS kyc_documents (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    company_id INT,
     user_id INT,
     doc_type ENUM('aadhar','pan','gst','bank_proof','address_proof','selfie') NOT NULL,
     doc_path VARCHAR(255) NOT NULL,
@@ -160,6 +200,7 @@ runSQL($pdo, "CREATE TABLE IF NOT EXISTS kyc_documents (
 
 runSQL($pdo, "CREATE TABLE IF NOT EXISTS merchants (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    company_id INT,
     business_name VARCHAR(255) NOT NULL,
     owner_name VARCHAR(100),
     mobile VARCHAR(20),
@@ -178,6 +219,7 @@ runSQL($pdo, "CREATE TABLE IF NOT EXISTS merchants (
 
 runSQL($pdo, "CREATE TABLE IF NOT EXISTS merchant_kyc (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    company_id INT,
     merchant_id INT NOT NULL,
     doc_type VARCHAR(50),
     doc_path VARCHAR(255),
@@ -187,6 +229,7 @@ runSQL($pdo, "CREATE TABLE IF NOT EXISTS merchant_kyc (
 
 runSQL($pdo, "CREATE TABLE IF NOT EXISTS inventory (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    company_id INT,
     item_name VARCHAR(100),
     sku VARCHAR(50) UNIQUE,
     total_qty INT DEFAULT 0,
@@ -197,6 +240,7 @@ runSQL($pdo, "CREATE TABLE IF NOT EXISTS inventory (
 
 runSQL($pdo, "CREATE TABLE IF NOT EXISTS inventory_movement (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    company_id INT,
     item_id INT,
     from_user_id INT,
     to_user_id INT,
@@ -207,6 +251,7 @@ runSQL($pdo, "CREATE TABLE IF NOT EXISTS inventory_movement (
 
 runSQL($pdo, "CREATE TABLE IF NOT EXISTS attendance (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    company_id INT,
     user_id INT,
     check_in TIMESTAMP NULL,
     check_out TIMESTAMP NULL,
@@ -219,6 +264,7 @@ runSQL($pdo, "CREATE TABLE IF NOT EXISTS attendance (
 
 runSQL($pdo, "CREATE TABLE IF NOT EXISTS payroll (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    company_id INT,
     user_id INT,
     month TINYINT,
     year SMALLINT,
@@ -232,6 +278,7 @@ runSQL($pdo, "CREATE TABLE IF NOT EXISTS payroll (
 
 runSQL($pdo, "CREATE TABLE IF NOT EXISTS campaigns (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    company_id INT,
     title VARCHAR(255) NOT NULL,
     description TEXT,
     cpl_amount DECIMAL(10,2) DEFAULT 0.00,
@@ -244,6 +291,7 @@ runSQL($pdo, "CREATE TABLE IF NOT EXISTS campaigns (
 
 runSQL($pdo, "CREATE TABLE IF NOT EXISTS agreements (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    company_id INT,
     title VARCHAR(255),
     content TEXT,
     version VARCHAR(10) DEFAULT '1.0',
@@ -253,6 +301,7 @@ runSQL($pdo, "CREATE TABLE IF NOT EXISTS agreements (
 
 runSQL($pdo, "CREATE TABLE IF NOT EXISTS user_agreements (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    company_id INT,
     user_id INT,
     agreement_id INT,
     accepted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -261,6 +310,7 @@ runSQL($pdo, "CREATE TABLE IF NOT EXISTS user_agreements (
 
 runSQL($pdo, "CREATE TABLE IF NOT EXISTS transactions (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    company_id INT,
     user_id INT,
     amount DECIMAL(15,2),
     type ENUM('credit','debit'),
@@ -271,6 +321,7 @@ runSQL($pdo, "CREATE TABLE IF NOT EXISTS transactions (
 
 runSQL($pdo, "CREATE TABLE IF NOT EXISTS distributor_details (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    company_id INT,
     user_id INT,
     business_name VARCHAR(255),
     gst_number VARCHAR(15),
@@ -285,6 +336,7 @@ runSQL($pdo, "CREATE TABLE IF NOT EXISTS distributor_details (
 
 runSQL($pdo, "CREATE TABLE IF NOT EXISTS notifications (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    company_id INT,
     user_id INT,
     title VARCHAR(255) NOT NULL,
     message TEXT,
@@ -296,6 +348,7 @@ runSQL($pdo, "CREATE TABLE IF NOT EXISTS notifications (
 
 runSQL($pdo, "CREATE TABLE IF NOT EXISTS wallet_transactions (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    company_id INT,
     user_id INT NOT NULL,
     amount DECIMAL(15,2) NOT NULL,
     type ENUM('credit','debit') NOT NULL,
@@ -308,6 +361,7 @@ runSQL($pdo, "CREATE TABLE IF NOT EXISTS wallet_transactions (
 
 runSQL($pdo, "CREATE TABLE IF NOT EXISTS withdrawal_requests (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    company_id INT,
     user_id INT NOT NULL,
     amount DECIMAL(15,2) NOT NULL,
     bank_name VARCHAR(100),
@@ -322,6 +376,7 @@ runSQL($pdo, "CREATE TABLE IF NOT EXISTS withdrawal_requests (
 
 runSQL($pdo, "CREATE TABLE IF NOT EXISTS qc_reviews (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    company_id INT,
     response_id INT NOT NULL,
     qc_agent_id INT NOT NULL,
     status ENUM('approved','rejected','rework') NOT NULL,
@@ -331,6 +386,7 @@ runSQL($pdo, "CREATE TABLE IF NOT EXISTS qc_reviews (
 
 runSQL($pdo, "CREATE TABLE IF NOT EXISTS tasks (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    company_id INT,
     title VARCHAR(255) NOT NULL,
     description TEXT,
     assigned_to INT,
@@ -343,6 +399,7 @@ runSQL($pdo, "CREATE TABLE IF NOT EXISTS tasks (
 
 runSQL($pdo, "CREATE TABLE IF NOT EXISTS invoices (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    company_id INT,
     invoice_number VARCHAR(50) UNIQUE,
     client_name VARCHAR(255),
     client_email VARCHAR(100),
@@ -359,6 +416,7 @@ runSQL($pdo, "CREATE TABLE IF NOT EXISTS invoices (
 
 runSQL($pdo, "CREATE TABLE IF NOT EXISTS expenses (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    company_id INT,
     title VARCHAR(255),
     amount DECIMAL(15,2),
     category VARCHAR(100),
@@ -372,6 +430,7 @@ runSQL($pdo, "CREATE TABLE IF NOT EXISTS expenses (
 
 runSQL($pdo, "CREATE TABLE IF NOT EXISTS announcements (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    company_id INT,
     title VARCHAR(255) NOT NULL,
     content TEXT,
     target_role INT DEFAULT 0,
@@ -382,6 +441,7 @@ runSQL($pdo, "CREATE TABLE IF NOT EXISTS announcements (
 // ===================== SEED DATA =====================
 echo "<br><p style='color:#64748b;'>--- Seeding default data ---</p>";
 
+runSQL($pdo, "INSERT IGNORE INTO companies (id, company_name) VALUES (1, 'Default Company')", "Seed: companies");
 runSQL($pdo, "INSERT IGNORE INTO departments (dept_name) VALUES ('Sales'),('Operations'),('Finance'),('Technology'),('HR')", "Seed: departments");
 
 runSQL($pdo, "INSERT IGNORE INTO roles (id, role_name) VALUES
@@ -390,8 +450,8 @@ runSQL($pdo, "INSERT IGNORE INTO roles (id, role_name) VALUES
 
 // Admin user with proper bcrypt hash for 'admin123'
 $hash = password_hash('admin123', PASSWORD_DEFAULT);
-runSQL($pdo, "INSERT IGNORE INTO users (id, name, email, password, role_id, status, kyc_status) VALUES
-    (1, 'System Admin', 'admin@contractum.com', '$hash', 1, 'active', 'verified')", "Seed: admin user");
+runSQL($pdo, "INSERT IGNORE INTO users (company_id, id, name, email, password, role_id, status, kyc_status) VALUES
+    (1, 1, 'System Admin', 'admin@contractum.com', '$hash', 1, 'active', 'verified')", "Seed: admin user");
 
 echo "<br><hr style='border-color:#1e293b;'>";
 echo "<p style='color:#10b981; font-size:1.1rem; font-weight:bold;'>✅ Migration complete! All tables created.</p>";

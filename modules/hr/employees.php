@@ -2,10 +2,12 @@
 include_once '../../includes/header.php';
 include_once '../../core/functions.php';
 
+$company_id = $_SESSION['company_id'] ?? 1;
+
 // Handle status change
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_status'])) {
-    $pdo->prepare("UPDATE users SET status = ? WHERE id = ?")
-        ->execute([$_POST['status'], (int)$_POST['user_id']]);
+    $pdo->prepare("UPDATE users SET status = ? WHERE id = ? AND company_id = ?")
+        ->execute([$_POST['status'], (int)$_POST['user_id'], $company_id]);
     $success = "Employee status updated!";
 }
 
@@ -17,12 +19,13 @@ $employees = $pdo->query("
     LEFT JOIN roles r ON u.role_id = r.id
     LEFT JOIN teams t ON u.team_id = t.id
     LEFT JOIN users m ON u.manager_id = m.id
+    WHERE u.company_id = $company_id
     ORDER BY u.created_at DESC
 ")->fetchAll();
 
-$total_active   = $pdo->query("SELECT COUNT(*) FROM users WHERE status='active'")->fetchColumn();
-$total_inactive = $pdo->query("SELECT COUNT(*) FROM users WHERE status='inactive'")->fetchColumn();
-$total_payroll  = $pdo->query("SELECT SUM(net_payable) FROM payroll WHERE month=MONTH(NOW()) AND year=YEAR(NOW())")->fetchColumn() ?: 0;
+$total_active   = $pdo->query("SELECT COUNT(*) FROM users WHERE status='active' AND company_id=$company_id")->fetchColumn();
+$total_inactive = $pdo->query("SELECT COUNT(*) FROM users WHERE status='inactive' AND company_id=$company_id")->fetchColumn();
+$total_payroll  = $pdo->query("SELECT SUM(net_payable) FROM payroll WHERE month=MONTH(NOW()) AND year=YEAR(NOW()) AND company_id=$company_id")->fetchColumn() ?: 0;
 ?>
 
 <div class="page-header">
@@ -40,7 +43,7 @@ $total_payroll  = $pdo->query("SELECT SUM(net_payable) FROM payroll WHERE month=
     </div>
     <div class="page-header-actions">
         <a href="<?php echo BASE_URL; ?>modules/hr/export.php" class="btn">Export</a>
-        <a href="<?php echo BASE_URL; ?>modules/team/users.php" class="btn btn-primary">+ Add Employee</a>
+        <a href="<?php echo BASE_URL; ?>modules/hr/add_employee.php" class="btn btn-primary">+ Add Employee</a>
     </div>
 </div>
 

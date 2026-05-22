@@ -16,9 +16,17 @@ if (isset($GLOBALS['pdo']) && isset($_SESSION['user_id'])) {
 }
 
 $menus = [];
+$company_id = $_SESSION['company_id'] ?? 1;
 
 if ($role_id == 1) {
-    $menus = [
+    if ($company_id == 1) { // Super Admin
+        $menus[] = ['type' => 'section', 'label' => 'SaaS Admin'];
+        $menus[] = ['href' => 'modules/saas/companies.php', 'label' => 'Companies', 'icon' => 'domain', 'match' => 'modules/saas/companies'];
+        $menus[] = ['href' => '#', 'label' => 'Subscriptions', 'icon' => 'subscription', 'match' => 'modules/saas/subscriptions'];
+        $menus[] = ['type' => 'section', 'label' => 'Company Management'];
+    }
+    
+    $menus = array_merge($menus, [
         ['href' => 'index.php', 'label' => 'Dashboard', 'icon' => 'home', 'match' => 'index.php'],
         ['href' => 'modules/team/teams.php', 'label' => 'Teams', 'icon' => 'team', 'match' => 'team/teams'],
         ['href' => 'modules/team/users.php', 'label' => 'Employees', 'icon' => 'users', 'match' => 'team/users'],
@@ -30,7 +38,7 @@ if ($role_id == 1) {
         ['href' => 'modules/reports/onboarding.php', 'label' => 'Reports', 'icon' => 'report', 'match' => 'modules/reports'],
         ['href' => 'modules/inventory/stock.php', 'label' => 'Asset Management', 'icon' => 'inventory', 'match' => 'modules/inventory'],
         ['href' => 'modules/settings/index.php', 'label' => 'Settings', 'icon' => 'settings', 'match' => 'modules/settings'],
-    ];
+    ]);
 } elseif ($role_id == 2) {
     $menus = [
         ['href' => 'index.php', 'label' => 'Dashboard', 'icon' => 'home', 'match' => 'index.php'],

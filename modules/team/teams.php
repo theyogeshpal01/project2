@@ -6,6 +6,7 @@ include_once '../../core/functions.php';
 if ($_SESSION['role_id'] != 1) {
     die("Unauthorized Access");
 }
+$company_id = $_SESSION['company_id'] ?? 1;
 
 // Handle Add Team
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_team'])) {
@@ -15,8 +16,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_team'])) {
     $manager_id = !empty($_POST['manager_id']) ? $_POST['manager_id'] : null;
 
     try {
-        $pdo->prepare("INSERT INTO teams (team_name, location, project_name, manager_id) VALUES (?,?,?,?)")
-            ->execute([$team_name, $location, $project_name, $manager_id]);
+        $pdo->prepare("INSERT INTO teams (company_id, team_name, location, project_name, manager_id) VALUES (?,?,?,?,?)")
+            ->execute([$company_id, $team_name, $location, $project_name, $manager_id]);
         $success = "Team '$team_name' added successfully!";
     } catch (Exception $e) {
         $error = "Error adding team: " . $e->getMessage();
@@ -32,8 +33,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_team'])) {
     $manager_id = !empty($_POST['manager_id']) ? $_POST['manager_id'] : null;
 
     try {
-        $pdo->prepare("UPDATE teams SET team_name=?, location=?, project_name=?, manager_id=? WHERE id=?")
-            ->execute([$team_name, $location, $project_name, $manager_id, $tid]);
+        $pdo->prepare("UPDATE teams SET team_name=?, location=?, project_name=?, manager_id=? WHERE id=? AND company_id=?")
+            ->execute([$team_name, $location, $project_name, $manager_id, $tid, $company_id]);
         $success = "Team updated successfully!";
     } catch (Exception $e) {
         $error = "Error updating team: " . $e->getMessage();
@@ -45,8 +46,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_team'])) {
     $tid = (int) $_POST['team_id'];
     try {
         // Unassign employees from this team
-        $pdo->prepare("UPDATE users SET team_id = NULL WHERE team_id = ?")->execute([$tid]);
-        $pdo->prepare("DELETE FROM teams WHERE id = ?")->execute([$tid]);
+        $pdo->prepare("UPDATE users SET team_id = NULL WHERE team_id = ? AND company_id = ?")->execute([$tid, $company_id]);
+        $pdo->prepare("DELETE FROM teams WHERE id = ? AND company_id = ?")->execute([$tid, $company_id]);
         $success = "Team deleted successfully.";
     } catch (Exception $e) {
         $error = "Error deleting team: " . $e->getMessage();
@@ -54,13 +55,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_team'])) {
 }
 
 // Fetch all managers to assign to teams (Admins, Supervisors, HR)
-$managers = $pdo->query("SELECT id, name FROM users WHERE status='active' AND role_id IN (1,2,7)")->fetchAll();
+$managers = $pdo->query("SELECT id, name FROM users WHERE status='active' AND role_id IN (1,2,7) AND company_id = $company_id")->fetchAll();
 
 // Fetch Teams
 $teams = $pdo->query("
-    SELECT t.*, u.name as manager_name, (SELECT COUNT(*) FROM users WHERE team_id = t.id) as emp_count 
+    SELECT t.*, u.name as manager_name, (SELECT COUNT(*) FROM users WHERE team_id = t.id AND company_id = $company_id) as emp_count 
     FROM teams t 
     LEFT JOIN users u ON t.manager_id = u.id 
+    WHERE t.company_id = $company_id
     ORDER BY t.created_at DESC
 ")->fetchAll();
 ?>

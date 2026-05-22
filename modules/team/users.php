@@ -3,6 +3,7 @@ include_once '../../includes/header.php';
 include_once '../../core/functions.php';
 
 $current_user_id = $_SESSION['user_id'];
+$company_id = $_SESSION['company_id'] ?? 1;
 
 // Handle user creation
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_user'])) {
@@ -15,8 +16,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_user'])) {
     $phone = trim($_POST['phone'] ?? '');
 
     try {
-        $pdo->prepare("INSERT INTO users (name, email, password, role_id, team_id, manager_id, phone) VALUES (?,?,?,?,?,?,?)")
-            ->execute([$name, $email, $password, $role_id, $team_id, $manager_id, $phone ?: null]);
+        $pdo->prepare("INSERT INTO users (company_id, name, email, password, role_id, team_id, manager_id, phone) VALUES (?,?,?,?,?,?,?,?)")
+            ->execute([$company_id, $name, $email, $password, $role_id, $team_id, $manager_id, $phone ?: null]);
         $success = "User '$name' added successfully!";
     } catch (Exception $e) {
         $error = "Error: " . $e->getMessage();
@@ -36,11 +37,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_user'])) {
 
     try {
         if (!empty($_POST['password'])) {
-            $pdo->prepare("UPDATE users SET name=?, email=?, password=?, role_id=?, team_id=?, manager_id=?, status=?, phone=? WHERE id=?")
-                ->execute([$name, $email, password_hash($_POST['password'], PASSWORD_DEFAULT), $role_id, $team_id, $manager_id, $status, $phone ?: null, $uid]);
+            $pdo->prepare("UPDATE users SET name=?, email=?, password=?, role_id=?, team_id=?, manager_id=?, status=?, phone=? WHERE id=? AND company_id=?")
+                ->execute([$name, $email, password_hash($_POST['password'], PASSWORD_DEFAULT), $role_id, $team_id, $manager_id, $status, $phone ?: null, $uid, $company_id]);
         } else {
-            $pdo->prepare("UPDATE users SET name=?, email=?, role_id=?, team_id=?, manager_id=?, status=?, phone=? WHERE id=?")
-                ->execute([$name, $email, $role_id, $team_id, $manager_id, $status, $phone ?: null, $uid]);
+            $pdo->prepare("UPDATE users SET name=?, email=?, role_id=?, team_id=?, manager_id=?, status=?, phone=? WHERE id=? AND company_id=?")
+                ->execute([$name, $email, $role_id, $team_id, $manager_id, $status, $phone ?: null, $uid, $company_id]);
         }
         $success = "User updated successfully!";
     } catch (Exception $e) {
@@ -57,11 +58,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_user'])) {
         $error = "The system admin account cannot be deleted.";
     } else {
         try {
-            $pdo->prepare("DELETE FROM users WHERE id = ?")->execute([$uid]);
+            $pdo->prepare("DELETE FROM users WHERE id = ? AND company_id = ?")->execute([$uid, $company_id]);
             $success = "User deleted successfully.";
         } catch (Exception $e) {
             // If foreign key constraint, just deactivate instead
-            $pdo->prepare("UPDATE users SET status='inactive' WHERE id=?")->execute([$uid]);
+            $pdo->prepare("UPDATE users SET status='inactive' WHERE id=? AND company_id=?")->execute([$uid, $company_id]);
             $success = "User deactivated (has linked records).";
         }
     }
@@ -72,17 +73,18 @@ $users = $pdo->query("SELECT u.*, r.role_name, t.team_name, m.name as manager_na
     LEFT JOIN roles r ON u.role_id = r.id
     LEFT JOIN teams t ON u.team_id = t.id
     LEFT JOIN users m ON u.manager_id = m.id
+    WHERE u.company_id = $company_id
     ORDER BY u.created_at DESC")->fetchAll();
 
-$roles = getRoles($pdo);
-$teams = getTeams($pdo);
-$managers = $pdo->query("SELECT id, name FROM users WHERE role_id IN (1,2,3) ORDER BY name")->fetchAll();
+$roles = getRoles($pdo); // Assuming getRoles doesn't need company_id or we update getRoles
+$teams = getTeams($pdo); // Same for getTeams
+$managers = $pdo->query("SELECT id, name FROM users WHERE role_id IN (1,2,3) AND company_id = $company_id ORDER BY name")->fetchAll();
 
 // Stats
 $total = count($users);
 $active = count(array_filter($users, fn($u) => $u['status'] === 'active'));
 $inactive = $total - $active;
-$designations = $pdo->query("SELECT COUNT(DISTINCT role_id) FROM users")->fetchColumn();
+$designations = $pdo->query("SELECT COUNT(DISTINCT role_id) FROM users WHERE company_id = $company_id")->fetchColumn();
 ?>
 
 <div class="page-header" style="align-items:flex-start;">
@@ -100,7 +102,7 @@ $designations = $pdo->query("SELECT COUNT(DISTINCT role_id) FROM users")->fetchC
     </div>
     <div style="display:flex;gap:10px;">
         <button class="btn glass-card">Clear Filters</button>
-        <button class="btn btn-primary" onclick="openAddModal()">+ Add Employee</button>
+        <a href="<?php echo BASE_URL; ?>modules/hr/add_employee.php" class="btn btn-primary">+ Add Employee</a>
     </div>
 </div>
 
@@ -208,11 +210,9 @@ $designations = $pdo->query("SELECT COUNT(DISTINCT role_id) FROM users")->fetchC
                         </td>
                         <td>
                             <div style="display:flex; gap:6px; align-items:center;">
-                                <button
+                                <a href="<?php echo BASE_URL; ?>modules/hr/edit_employee.php?id=<?php echo $user['id']; ?>"
                                     class="btn btn-primary"
-                                    style="padding:4px 8px;font-size:0.75rem;"
-                                    data-user="<?php echo htmlspecialchars(json_encode(array_intersect_key($user, array_flip(['id','name','email','phone','role_id','team_id','manager_id','status']))), ENT_QUOTES); ?>"
-                                    onclick="openEditModal(this)">Edit</button>
+                                    style="padding:4px 8px;font-size:0.75rem; text-decoration:none;">Edit</a>
 
                                 <?php if ($user['id'] != $current_user_id && $user['id'] != 1): ?>
                                     <form method="POST" style="display:inline;" onsubmit="return confirm('Delete this user? This cannot be undone.')">

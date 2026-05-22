@@ -2,12 +2,14 @@
 include_once '../../includes/header.php'; 
 include_once '../../core/functions.php';
 
+$company_id = $_SESSION['company_id'] ?? 1;
+
 // Handle Lead Status Update (Manage Action)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_lead_status'])) {
     $lead_id = trim($_POST['lead_id']);
     $new_status = $_POST['status'];
     try {
-        $pdo->prepare("UPDATE leads SET status = ? WHERE id = ?")->execute([$new_status, $lead_id]);
+        $pdo->prepare("UPDATE leads SET status = ? WHERE id = ? AND company_id = ?")->execute([$new_status, $lead_id, $company_id]);
         $success = "Lead status updated successfully.";
     } catch (Exception $e) {
         $error = "Error updating lead: " . $e->getMessage();
@@ -18,6 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_lead_status'])
 $search = $_GET['search'] ?? '';
 $where_clauses = [];
 $params = [];
+$where_clauses[] = "r.company_id = $company_id";
 if (!empty($search)) {
     $where_clauses[] = "(r.customer_name LIKE ? OR r.business_name LIKE ? OR r.mobile LIKE ?)";
     $params[] = "%$search%";
@@ -37,10 +40,10 @@ $stmt->execute($params);
 $leads = $stmt->fetchAll();
 
 // Dynamic Counters
-$new_count = $pdo->query("SELECT COUNT(*) FROM leads WHERE status = 'new'")->fetchColumn();
-$process_count = $pdo->query("SELECT COUNT(*) FROM leads WHERE status IN ('assigned', 'qualified', 'in_process')")->fetchColumn();
-$approved_count = $pdo->query("SELECT COUNT(*) FROM leads WHERE status = 'qc_approved'")->fetchColumn();
-$rejected_count = $pdo->query("SELECT COUNT(*) FROM leads WHERE status = 'rejected'")->fetchColumn();
+$new_count = $pdo->query("SELECT COUNT(*) FROM leads WHERE status = 'new' AND company_id = $company_id")->fetchColumn();
+$process_count = $pdo->query("SELECT COUNT(*) FROM leads WHERE status IN ('assigned', 'qualified', 'in_process') AND company_id = $company_id")->fetchColumn();
+$approved_count = $pdo->query("SELECT COUNT(*) FROM leads WHERE status = 'qc_approved' AND company_id = $company_id")->fetchColumn();
+$rejected_count = $pdo->query("SELECT COUNT(*) FROM leads WHERE status = 'rejected' AND company_id = $company_id")->fetchColumn();
 ?>
 
 <div class="page-header" style="align-items:flex-start;">

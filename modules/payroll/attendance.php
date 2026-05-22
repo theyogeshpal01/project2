@@ -3,6 +3,7 @@ include_once '../../includes/header.php';
 include_once '../../core/functions.php';
 
 $user_id  = $_SESSION['user_id'] ?? 1;
+$company_id = $_SESSION['company_id'] ?? 1;
 $role_id  = $_SESSION['role_id'] ?? 1;
 $today    = date('Y-m-d');
 $is_admin = in_array($role_id, [1, 2, 7]);
@@ -14,16 +15,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (isset($_POST['check_in'])) {
         try {
-            $pdo->prepare("INSERT INTO attendance (user_id, check_in, latitude, longitude, attendance_date, status) VALUES (?, NOW(), ?, ?, ?, 'full')")
-                ->execute([$user_id, $lat, $lng, $today]);
+            $pdo->prepare("INSERT INTO attendance (company_id, user_id, check_in, latitude, longitude, attendance_date, status) VALUES (?, ?, NOW(), ?, ?, ?, 'full')")
+                ->execute([$company_id, $user_id, $lat, $lng, $today]);
             $success = "Checked in successfully!";
         } catch (Exception $e) {
             $error = "Check-in failed: " . $e->getMessage();
         }
     } elseif (isset($_POST['check_out'])) {
         try {
-            $pdo->prepare("UPDATE attendance SET check_out = NOW() WHERE user_id = ? AND attendance_date = ?")
-                ->execute([$user_id, $today]);
+            $pdo->prepare("UPDATE attendance SET check_out = NOW() WHERE user_id = ? AND attendance_date = ? AND company_id = ?")
+                ->execute([$user_id, $today, $company_id]);
             $success = "Checked out successfully!";
         } catch (Exception $e) {
             $error = "Check-out failed: " . $e->getMessage();
@@ -32,8 +33,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Fetch today's record for current user
-$stmt = $pdo->prepare("SELECT * FROM attendance WHERE user_id = ? AND attendance_date = ?");
-$stmt->execute([$user_id, $today]);
+$stmt = $pdo->prepare("SELECT * FROM attendance WHERE user_id = ? AND attendance_date = ? AND company_id = ?");
+$stmt->execute([$user_id, $today, $company_id]);
 $my_attendance = $stmt->fetch() ?: []; // empty array if no record today
 
 $filter_user = $_GET['user_id'] ?? '';
@@ -57,21 +58,22 @@ if ($is_admin) {
             FROM attendance a
             JOIN users u ON a.user_id = u.id
             JOIN roles r ON u.role_id = r.id
-            WHERE a.user_id = ?
+            WHERE a.user_id = ? AND a.company_id = ?
             ORDER BY a.attendance_date DESC");
-        $stmt_all->execute([$filter_user]);
+        $stmt_all->execute([$filter_user, $company_id]);
     } else {
         $stmt_all = $pdo->prepare("SELECT a.*, u.name as user_name, r.role_name
             FROM attendance a
             JOIN users u ON a.user_id = u.id
             JOIN roles r ON u.role_id = r.id
+            WHERE a.company_id = ?
             ORDER BY a.attendance_date DESC");
-        $stmt_all->execute();
+        $stmt_all->execute([$company_id]);
     }
     $all_attendance = $stmt_all->fetchAll();
 }
 
-$all_users = $pdo->query("SELECT id, name FROM users WHERE status='active' ORDER BY name")->fetchAll();
+$all_users = $pdo->query("SELECT id, name FROM users WHERE status='active' AND company_id = $company_id ORDER BY name")->fetchAll();
 
 // Monthly summary (always for current user)
 $stmt_pres = $pdo->prepare("SELECT COUNT(*) FROM attendance WHERE user_id=? AND DATE_FORMAT(attendance_date,'%Y-%m')=?");
